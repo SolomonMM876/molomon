@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#082f2d">
+    <meta name="description" content="Molomon — shared links for watching, talking, playing, and spending time together.">
+    <title>Molomon</title>
+    <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
+    <link rel="manifest" href="./manifest.webmanifest">
+    <link rel="apple-touch-icon" href="./assets/app-icon-192.png">
+    <link rel="stylesheet" href="./styles.css">
+    <script src="./config.js" defer></script>
+    <script src="./app.js" defer></script>
+    <script src="./install.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="site-header home-header">
+      <div class="header-inner">
+        <a class="brand" href="#home" aria-label="Molomon home">
+          <img src="./assets/favicon.svg" width="30" height="30" alt="">
+          <span data-site-title>Molomon</span>
+        </a>
+        <nav aria-label="Sections" id="section-nav"></nav>
+      </div>
+    </header>
+
+    <main id="main" tabindex="-1">
+      <div class="page-inner">
+        <section class="home" id="home" aria-labelledby="home-title" tabindex="-1">
+          <div class="orbit">
+            <div class="orbit-core">
+              <img class="nook" src="./assets/nook.svg" width="440" height="240" alt="" fetchpriority="high">
+              <a class="fish-bone" id="snowys-fish" href="./secret.html" aria-label="Open Snowy's fish bone"><img src="./assets/fish-bone.svg" width="28" height="17" alt=""></a>
+              <h1 id="home-title" data-site-title>Molomon</h1>
+            </div>
+            <nav class="orbit-nav" id="orbit-nav" aria-label="Explore sections"></nav>
+          </div>
+          <div class="home-details">
+            <p class="partners" id="partners" hidden></p>
+            <button type="button" class="name-button" id="edit-names">Add names <span aria-hidden="true">✎</span></button>
+            <button type="button" class="name-button" id="install-app">Add to phone <span aria-hidden="true">＋</span></button>
+            <p class="link-count" id="link-count" hidden></p>
+          </div>
+        </section>
+        <noscript><p class="error-message">Enable JavaScript to show the options.</p></noscript>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <span data-site-title>Molomon</span>
+      <a href="./suggestions.html">Suggestions <span aria-hidden="true">→</span></a>
+    </footer>
+
+    <dialog id="names-dialog" aria-labelledby="names-title">
+      <form id="names-form">
+        <h2 id="names-title">Your names</h2>
+        <p class="dialog-description">Saved on this device.</p>
+        <label for="first-name">Your name</label>
+        <input id="first-name" name="firstName" type="text" maxlength="40" autocomplete="given-name">
+        <label for="second-name">Partner’s name</label>
+        <input id="second-name" name="secondName" type="text" maxlength="40" autocomplete="off">
+        <div class="dialog-actions">
+          <button type="button" class="name-button" id="cancel-names">Cancel</button>
+          <button type="submit" class="open-button">Save</button>
+        </div>
+      </form>
+    </dialog>
+  </body>
+</html>

@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#082f2d">
+  <title>Categories · Molomon</title>
+  <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./category.css">
+  <script src="./config.js" defer></script>
+  <script src="./category.js" defer></script>
+</head>
+<body class="category-page">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="./index.html" aria-label="Molomon home"><img src="./assets/favicon.svg" width="30" height="30" alt=""><span data-site-title>Molomon</span></a>
+      <nav id="category-nav" aria-label="Categories"></nav>
+    </div>
+  </header>
+  <main id="main" tabindex="-1">
+    <div class="page-inner">
+      <div class="category-heading"><h1 id="category-title">Categories</h1><p id="category-description">Choose a category above.</p></div>
+      <div id="category-cards" class="card-grid" aria-labelledby="category-title"></div>
+      <noscript><p>Enable JavaScript to choose a category and show its links.</p></noscript>
+    </div>
+  </main>
+  <footer class="site-footer"><span data-site-title>Molomon</span><a href="./index.html"><span aria-hidden="true">←</span> Home</a></footer>
+</body>
+</html>

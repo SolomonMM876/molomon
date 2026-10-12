@@ -1,0 +1,53 @@
+name: Publish Molomon
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+      - name: Check website and activity logic
+        run: |
+          for molomon_script in *.js
+          do
+            node --check "$molomon_script"
+          done
+          node test/backgammon-test.cjs
+          node test/calendar-test.cjs
+          node test/notes-test.cjs
+          node test/pwa-test.cjs
+      - name: Prepare public files
+        run: python3 scripts/prepare-pages.py
+      - name: Upload public files
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    needs: prepare
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Publish to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

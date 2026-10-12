@@ -1,0 +1,12 @@
+.category-page #category-nav { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px; }
+.category-page .category-heading { padding: 48px 0 30px; }
+.category-page h1 { margin: 0; font-size: clamp(32px, 5vw, 38px); letter-spacing: -1.3px; font-weight: 500; }
+.category-page #category-description { color: var(--muted); font-size: 15px; line-height: 1.6; margin: 12px 0 0; }
+.category-page #category-cards { padding-bottom: 40px; min-height: 120px; }
+.category-page .empty-category { color: var(--muted); }
+.category-page .nav-link { min-height: 44px; display: inline-flex; align-items: center; }
+@media (max-width: 760px) {
+  .category-page .header-inner { gap: 12px; }
+  .category-page #category-nav { width: 100%; justify-content: flex-start; gap: 3px; }
+  .category-page .category-heading { padding: 30px 0 24px; }
+}

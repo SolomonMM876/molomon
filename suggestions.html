@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#082f2d">
+  <title>Suggestions · Molomon</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="assets/app-icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="suggestions.css">
+  <script src="config.js" defer></script>
+  <script src="suggestions.js" defer></script>
+  <script src="install.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#suggestions-main">Skip to suggestions</a>
+  <header class="site-header"><div class="header-inner"><a class="brand" href="index.html"><img src="assets/favicon.svg" width="30" height="30" alt="">Molomon</a><nav class="suggestions-nav" aria-label="Suggestions navigation"><a href="index.html">Home</a><a href="#request-form">Suggest a change</a><a href="#requests">Requests</a></nav></div></header>
+  <main id="suggestions-main" class="suggestions-main" tabindex="-1">
+    <div class="suggestions-heading"><p class="eyebrow">Our hub</p><h1>Suggestions</h1><p>Request a change to Molomon.</p></div>
+    <section class="suggestions-access" aria-label="Private access"><div><p id="access-status" role="status" aria-live="polite">Private storage needs setup. You can keep a draft on this device.</p><p id="connection-status" class="suggestions-muted"></p></div><div class="suggestions-actions"><button id="request-sign-in" class="suggestions-button" type="button" hidden>Sign in with Google</button><button id="request-sign-out" class="suggestions-button secondary" type="button" hidden>Sign out</button></div></section>
+    <p id="suggestions-message" class="suggestions-message" role="status" aria-live="polite" hidden></p>
+    <form id="request-form" class="suggestion-composer">
+      <label for="request-author">Requesting as<input id="request-author" type="text" maxlength="80" autocomplete="given-name" value="You" required></label>
+      <label for="request-text">What should change?<textarea id="request-text" rows="6" maxlength="4000" placeholder="Add a game, change a link, or adjust the page." required></textarea></label>
+      <div class="composer-footer"><p id="draft-status" class="suggestions-muted" role="status">Drafts stay on this device.</p><span id="request-count" class="suggestions-muted">0 / 4,000</span></div>
+      <div class="suggestions-actions"><button id="submit-request" class="suggestions-button" type="submit" disabled>Submit request</button><button id="clear-request-draft" class="suggestions-button secondary" type="button">Clear draft</button></div>
+      <p id="queue-explanation" class="suggestions-muted">Requests enter a private preparation queue. Publishing still needs your approval.</p>
+    </form>
+    <section id="requests" class="requests-section" aria-labelledby="requests-heading"><div class="requests-heading"><h2 id="requests-heading">Requests</h2><span id="queue-count" class="suggestions-muted"></span></div><div id="request-list"><p class="requests-empty">Sign in after private storage is configured to see requests.</p></div></section>
+    <details class="suggestions-help"><summary>How requests are handled</summary><p>Codex checks submitted requests about every 15 minutes when your computer and the Codex app are running, and this page is signed in. The website itself does not run an agent. Private storage and the scheduled check must be configured first.</p><p>Pending → Preparing → Ready. Done means the change is finished; Needs input means a detail or decision is missing. Response summaries appear on each request. Prepared website changes wait for your approval before publication.</p><p>A request describes a change to Molomon. It is never treated as a shell command or authority to access unrelated files or accounts. Invitations and private credentials stay out of the public website.</p><p><a href="https://github.com/SolomonMM876/molomon/blob/main/docs/SUGGESTIONS.md" target="_blank" rel="noopener noreferrer">Setup and maintenance ↗</a></p></details>
+    <noscript><p class="requests-empty">Enable JavaScript to use suggestions.</p></noscript>
+  </main>
+  <footer class="site-footer"><span>Molomon</span><a href="index.html"><span aria-hidden="true">←</span> Home</a></footer>
+</body>
+</html>

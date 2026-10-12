@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#ffffff">
+  <title>Calendar · Molomon</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="assets/app-icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="calendar.css">
+  <script src="config.js" defer></script>
+  <script src="assets/vendor/ical.min.js" defer></script>
+  <script src="calendar.js" defer></script>
+  <script src="install.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#calendar-main">Skip to calendar</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="index.html"><img src="assets/favicon.svg" width="25" height="25" alt="">Molomon</a>
+      <nav aria-label="Calendar navigation" class="calendar-nav"><a href="index.html">Home</a><a href="#people">Calendars</a><a href="#shared-week">Week</a><a href="#free-time">Free time</a></nav>
+    </div>
+  </header>
+  <main id="calendar-main" class="calendar-main" tabindex="-1">
+    <div class="calendar-heading"><div><p class="eyebrow">Together</p><h1>Calendar</h1></div><p>Compare busy time. Find a free window.</p></div>
+    <form id="week-form" class="calendar-controls" aria-label="Week and meeting settings">
+      <div class="calendar-week-actions"><button id="today-week" type="button" class="calendar-button secondary">Today</button><button id="previous-week" type="button" class="calendar-button secondary week-arrow" aria-label="Previous week">‹</button><button id="next-week" type="button" class="calendar-button secondary week-arrow" aria-label="Next week">›</button></div>
+      <label>Week of <input id="week-date" type="date" required></label>
+      <label>View in <input id="display-zone" type="text" list="time-zones" required spellcheck="false" autocomplete="off"></label>
+      <label>Minimum time <select id="duration"><option value="15">15 minutes</option><option value="30" selected>30 minutes</option><option value="45">45 minutes</option><option value="60">1 hour</option><option value="90">90 minutes</option><option value="120">2 hours</option></select></label>
+      <button type="submit" class="calendar-button">Update week</button>
+    </form>
+    <datalist id="time-zones"></datalist>
+    <p id="page-status" class="calendar-status" role="status" aria-live="polite"></p>
+    <section id="people" aria-label="Your calendars" class="people-grid"></section>
+    <section id="shared-week" class="calendar-section" aria-labelledby="week-heading">
+      <div class="calendar-section-heading"><h2 id="week-heading">Shared week</h2><span id="week-label" class="muted"></span></div>
+      <p class="muted compact">Busy blocks are shown separately for each person. Empty space is confirmed free only after both calendars are loaded for this week.</p>
+      <div id="calendar-legend" class="calendar-legend" aria-label="Calendar colors"></div>
+      <div id="week-calendar" class="week-calendar"></div>
+    </section>
+    <section id="free-time" class="calendar-section" aria-labelledby="free-heading">
+      <div class="calendar-section-heading"><h2 id="free-heading">Free time</h2><span id="free-count" class="muted"></span></div>
+      <div id="free-slots" class="free-slots"></div>
+    </section>
+    <details class="calendar-help">
+      <summary>Import and connection details</summary>
+      <p>In Google Calendar on a computer, open Settings → Import &amp; export → Export. Unzip the download, then import the .ics files here. All-day events block their local calendar day; events marked “Free” do not block time. Files are read on this device.</p>
+      <p>Google sign-in reads calendar names and busy time. A Google OAuth web client ID must be added to <code>calendar.googleClientId</code> in <code>config.js</code> before it works. <a href="https://github.com/SolomonMM876/molomon/blob/main/docs/GOOGLE_CALENDAR_SETUP.md" target="_blank" rel="noopener noreferrer">Setup instructions ↗</a>. Sign into your own account, then choose which calendars to include from the checklist. If your partner shares their Google calendar's free/busy information with you, enter their explicit calendar ID in the other panel and press “Load shared calendar” to read it with your existing connection. Leave “primary” only for your own main calendar. Connected calendars update each minute while this tab is visible, and when you return to it. Expired sign-in asks you to reconnect; it never opens a popup automatically.</p>
+      <p>Share codes contain a name, time zone, chosen week, and busy intervals. They contain no event titles or Google tokens. Send the code privately to your partner, who can paste it into their other panel. A code is a snapshot, not live synchronization; generate a new one after changes.</p>
+      <p>Names, time zones, available-hour preferences, and chosen calendar IDs are saved only in this browser. Calendar files, busy data, calendar names, and Google tokens stay in memory and disappear on refresh. Free windows are suggestions based on the calendars you supplied. “Add to calendars” downloads a plan for the minimum selected duration; import it into your calendars to reserve it.</p>
+    </details>
+    <noscript><p class="empty-message">Enable JavaScript to use the calendar.</p></noscript>
+  </main>
+  <footer class="site-footer"><span>Molomon</span><a href="index.html">Home <span aria-hidden="true">←</span></a></footer>
+</body>
+</html>

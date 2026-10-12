@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#082f2d">
+  <meta name="description" content="Two-player Backgammon, remotely or on one screen.">
+  <title>Backgammon · Molomon</title>
+  <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./backgammon.css">
+  <script src="./assets/vendor/peerjs.min.js" defer></script>
+  <script src="./backgammon.js" defer></script>
+</head>
+<body>
+  <header class="game-header"><a href="./index.html">← Molomon</a><h1>Backgammon</h1><span>Two players</span></header>
+  <main>
+    <div class="connection-row"><p class="connection" id="connection" role="status">Choose how to play.</p><button id="cancel-connection" hidden>Back</button></div>
+    <section class="setup panel" id="setup" aria-labelledby="setup-title">
+      <h2 id="setup-title">Start a game</h2>
+      <div class="setup-fields">
+        <label>Your name <input id="player-name" autocomplete="given-name" maxlength="30" value="Cream"></label>
+        <label>Other player's name <input id="other-name" autocomplete="off" maxlength="30" value="Clay"><small>For one-screen play.</small></label>
+      </div>
+      <div class="button-row"><button id="start-remote" class="primary">Start remote game</button><button id="start-local">Play on one screen</button></div>
+      <p class="help">Remote: start a game, copy its invitation, and send it to your partner. Keep the host's tab open.</p>
+      <form id="join-form" class="join-row"><label>Invitation or room code <input id="join-code" autocomplete="off" spellcheck="false" placeholder="Paste here"></label><button type="submit">Join</button></form>
+      <button id="resume" hidden>Resume your last remote game</button>
+    </section>
+    <section class="panel invitation" id="invitation" hidden aria-label="Invitation">
+      <label>Invitation <input id="invite-link" readonly aria-label="Invitation link" spellcheck="false"></label><button id="copy-invite">Copy link</button>
+      <p class="help">Your partner joins as Clay. Share this invitation directly; keep it out of the public hub.</p>
+    </section>
+    <section id="game" hidden aria-labelledby="game-title">
+      <div class="game-toolbar"><div><h2 id="game-title">Your table</h2><p id="turn-status" role="status" tabindex="-1"></p></div><div class="button-row"><button id="new-game">New game</button><button id="leave-game">Leave</button></div></div>
+      <div class="player-row" id="players"></div>
+      <div class="turn-controls panel"><div><p id="dice-label">Dice</p><div id="dice" class="dice" aria-label="Dice remaining"></div></div><button id="roll" class="primary">Roll to start</button></div>
+      <p id="move-help" class="move-help">Select a checker, then a highlighted destination.</p>
+      <div class="board-frame"><div id="board" class="board" role="group" aria-label="Backgammon board"></div></div>
+      <div class="move-options" id="move-options" aria-label="Available moves"></div>
+      <p class="last-action" id="last-action"></p>
+    </section>
+    <p id="error" class="error" role="alert" hidden></p>
+    <details class="rules panel"><summary>How to play</summary><div>
+      <p>Bring all 15 checkers into your home board, then bear them off. Cream moves from point 24 toward 1. Clay moves from 1 toward 24. Numbers follow Cream's view.</p>
+      <p>The opening roll gives each player one die. The higher die starts, using both numbers; ties roll again. After that, roll two dice per turn. Doubles give four moves.</p>
+      <p>A point with two or more opposing checkers is blocked. Landing on one opposing checker sends it to the bar. Checkers on the bar must re-enter first.</p>
+      <p>Use both dice, or as many of the four doubles as possible. If only one of two different dice can be played, use the larger. Highlighted moves already follow these rules.</p>
+      <p>Bear off only when every remaining checker is in your home board. A larger die may bear off a checker only when no checker is farther from the exit. The first player to bear off all 15 wins.</p>
+      <p>Casual games: no doubling cube or match scoring. Select points with a tap or mouse. With a keyboard, Tab to a checker or destination and press Enter or Space. Escape clears your selection.</p>
+      <p>Remote play uses PeerJS and WebRTC. A blocked network or an unavailable connection server may prevent joining; try another network. One-screen play works without a network.</p>
+      <a href="https://usbgf.org/backgammon-basics-how-to-play/" target="_blank" rel="noopener noreferrer">Rules reference ↗</a>
+    </div></details>
+  </main>
+</body>
+</html>

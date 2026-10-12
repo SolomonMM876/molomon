@@ -1,0 +1,125 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Replace these two placeholders ONLY in the Firebase console's Rules
+    // editor. Keep this public repository copy unchanged and deny by default.
+    function authorized() {
+      return request.auth != null
+        && request.auth.token.firebase.sign_in_provider == 'google.com'
+        && request.auth.token.email_verified == true
+        && request.auth.token.email in ['REPLACE_FIRST_GOOGLE_EMAIL', 'REPLACE_SECOND_GOOGLE_EMAIL'];
+    }
+    function randomId(value) { return value.matches('^[a-f0-9]{32}$'); }
+    function member(roomId) {
+      return authorized() && request.auth.uid in get(/databases/$(database)/documents/rooms/$(roomId)).data.members;
+    }
+    function validNote() {
+      let note = request.resource.data;
+      return note.keys().hasAll(['title', 'body', 'notebookId', 'authorName', 'revision', 'deleted', 'createdBy', 'createdAt', 'updatedBy', 'updatedAt'])
+        && note.keys().hasOnly(['title', 'body', 'notebookId', 'authorName', 'revision', 'deleted', 'createdBy', 'createdAt', 'updatedBy', 'updatedAt'])
+        && note.title is string && note.title.size() > 0 && note.title.size() <= 160
+        && note.body is string && note.body.size() <= 20000
+        && note.notebookId is string && (note.notebookId == 'default' || randomId(note.notebookId))
+        && note.authorName is string && note.authorName.size() > 0 && note.authorName.size() <= 80
+        && note.revision is int && note.revision > 0
+        && note.deleted is bool
+        && note.createdBy is string && note.createdBy.size() > 0 && note.createdBy.size() <= 128
+        && note.updatedBy == request.auth.uid
+        && note.createdAt is timestamp && note.updatedAt == request.time;
+    }
+    function validBook() {
+      let book = request.resource.data;
+      return book.keys().hasAll(['name', 'authorName', 'revision', 'deleted', 'createdBy', 'createdAt', 'updatedBy', 'updatedAt'])
+        && book.keys().hasOnly(['name', 'authorName', 'revision', 'deleted', 'createdBy', 'createdAt', 'updatedBy', 'updatedAt'])
+        && book.name is string && book.name.size() > 0 && book.name.size() <= 80
+        && book.authorName is string && book.authorName.size() > 0 && book.authorName.size() <= 80
+        && book.revision is int && book.revision > 0 && book.deleted is bool
+        && book.createdBy is string && book.createdBy.size() > 0 && book.createdBy.size() <= 128
+        && book.updatedBy == request.auth.uid
+        && book.createdAt is timestamp && book.updatedAt == request.time;
+    }
+    match /access/molomon {
+      // A successful server read authorizes the UI before it reveals private
+      // cached notes. Create {ready:true} here in the Firebase console.
+      allow get: if authorized();
+      allow list, write: if false;
+    }
+    match /rooms/{roomId} {
+      // An invitation identifies a space. It grants no authorization beyond
+      // the two Google accounts permitted by the private backend allowlist.
+      allow get: if authorized() && randomId(roomId);
+      allow list, delete: if false;
+      allow create: if authorized() && randomId(roomId)
+        && request.resource.data.keys().hasAll(['members', 'createdBy', 'createdAt', 'updatedAt'])
+        && request.resource.data.keys().hasOnly(['members', 'createdBy', 'createdAt', 'updatedAt'])
+        && request.resource.data.members == [request.auth.uid]
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+      // The two authorized accounts may append only their own stable Google
+      // identity. Multiple devices use the same Google account UID.
+      allow update: if authorized() && randomId(roomId)
+        && !(request.auth.uid in resource.data.members)
+        && resource.data.members.size() < 2
+        && request.resource.data.members == resource.data.members.concat([request.auth.uid])
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members', 'updatedAt'])
+        && request.resource.data.updatedAt == request.time;
+      match /notes/{noteId} {
+        allow get, list: if member(roomId);
+        allow create: if member(roomId) && randomId(noteId) && validNote()
+          && request.resource.data.createdBy == request.auth.uid
+          && request.resource.data.createdAt == request.time
+          && request.resource.data.revision == 1
+          && request.resource.data.deleted == false;
+        allow update: if member(roomId) && randomId(noteId) && validNote()
+          && request.resource.data.createdBy == resource.data.createdBy
+          && request.resource.data.createdAt == resource.data.createdAt
+          && request.resource.data.revision == resource.data.revision + 1;
+        // Deletion is an incremented-revision tombstone, so stale edits cannot
+        // silently recreate a note that the partner has removed.
+        allow delete: if false;
+      }
+      match /books/{bookId} {
+        allow get, list: if member(roomId);
+        allow create: if member(roomId) && randomId(bookId) && validBook()
+          && request.resource.data.createdBy == request.auth.uid
+          && request.resource.data.createdAt == request.time
+          && request.resource.data.revision == 1 && request.resource.data.deleted == false;
+        allow update: if member(roomId) && randomId(bookId) && validBook()
+          && request.resource.data.createdBy == resource.data.createdBy
+          && request.resource.data.createdAt == resource.data.createdAt
+          && request.resource.data.revision == resource.data.revision + 1;
+        allow delete: if false;
+      }
+    }
+    // Requests are private to the same two verified Google accounts. The
+    // desktop agent uses an already-authorized browser; no admin secret is
+    // present in the website. Status updates never grant publishing approval.
+    match /requests/{requestId} {
+      function validRequest() {
+        let item = request.resource.data;
+        return item.keys().hasAll(['text', 'authorName', 'status', 'response', 'revision', 'createdBy', 'createdAt', 'updatedBy', 'updatedAt'])
+          && item.keys().hasOnly(['text', 'authorName', 'status', 'response', 'revision', 'createdBy', 'createdAt', 'updatedBy', 'updatedAt'])
+          && item.text is string && item.text.size() > 0 && item.text.size() <= 4000
+          && item.authorName is string && item.authorName.size() > 0 && item.authorName.size() <= 80
+          && item.status in ['Pending', 'Preparing', 'Ready', 'Done', 'Needs input']
+          && item.response is string && item.response.size() <= 4000
+          && item.revision is int && item.revision > 0
+          && item.createdBy is string && item.createdBy.size() > 0 && item.createdBy.size() <= 128
+          && item.createdAt is timestamp
+          && item.updatedBy == request.auth.uid && item.updatedAt == request.time;
+      }
+      allow get, list: if authorized();
+      allow create: if authorized() && randomId(requestId) && validRequest()
+        && request.resource.data.status == 'Pending' && request.resource.data.response == ''
+        && request.resource.data.revision == 1
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.createdAt == request.time;
+      allow update: if authorized() && randomId(requestId) && validRequest()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'response', 'revision', 'updatedBy', 'updatedAt'])
+        && request.resource.data.revision == resource.data.revision + 1;
+      allow delete: if false;
+    }
+    match /{document=**} { allow read, write: if false; }
+  }
+}
