@@ -18,7 +18,7 @@ window.MOLOMON_CONFIG = {
   secret: { message: "I love you", url: "./secret.html" },
   // Public Google OAuth Web client ID. Never put a client secret here.
   // See README.md for the one-time Google Calendar setup.
-  calendar: { googleClientId: "" },
+  calendar: { googleClientId: "604202426876-21avg4s6hvijim44al479bk5ookpolti.apps.googleusercontent.com" },
   // Public Firebase web-app configuration for shared notes. Setup is documented
   // in docs/SHARED_NOTES_SETUP.md. Never add service-account credentials.
   notes: {
