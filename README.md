@@ -1,6 +1,6 @@
 # Molomon
 
-A shared starting page with circular navigation around the white cat and mushrooms. Watch, Play, and Together open their own category pages; Calendar and Notes open the included apps. Talk and Favorites are smaller header links. Vanilla HTML, CSS, and JavaScript; no framework or package install required.
+A shared starting page with circular navigation around the white cat and mushrooms. Watch, Play, and Together open their own category pages with circular app choices; Calendar and Notes open the included apps. Talk and Favorites are smaller header links. Vanilla HTML, CSS, and JavaScript; no framework or package install required.
 
 Use **Add names** on the homepage to personalize it. Names are saved on that browser/device. Calendar, Backgammon, and Notes open the included activities; Watchroom and Rummy 500 open their existing websites.
 
@@ -41,7 +41,7 @@ Calendar combines two people's busy time and finds free slots within their chose
 
 Connected Google calendars refresh every minute while visible, and when you return to the page. Availability snapshots can also be exchanged between devices; send a new snapshot after schedule changes. Shared Google calendars can be read with an account that has permission to view their busy time. Molomon does not store calendar data on a server.
 
-Backgammon supports two people playing remotely through an invitation, or local pass-and-play. The host keeps the game tab open. Room invitations belong in your private chat, not `config.js`. This is a casual game without a doubling cube. Remote connections use WebRTC and PeerJS; some networks block direct connections.
+Backgammon uses a Rummy-style name-entry screen. Enter your display name to start a remote table, or open an invitation and choose **Join table**. Your name is remembered on this device; no account is required. **Play on one screen** opens local pass-and-play. The host keeps the game tab open. Room invitations belong in your private chat, not `config.js`. This is a casual game without a doubling cube. Remote connections use WebRTC and PeerJS; some networks block direct connections.
 
 Notes uses notebook tabs and bullet lists. Shared cloud storage needs [Firebase setup](docs/SHARED_NOTES_SETUP.md). Put Firebase's public web-app configuration in `config.js` → `notes.firebase`, enable Google sign-in, and restrict the database rules to your two verified Google accounts. Until configured, the notes preview saves on this device. Invitations identify your space; they do not give anyone else access. Export backups from the notes page.
 

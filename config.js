@@ -22,7 +22,12 @@ window.MOLOMON_CONFIG = {
   // Public Firebase web-app configuration for shared notes. Setup is documented
   // in docs/SHARED_NOTES_SETUP.md. Never add service-account credentials.
   notes: {
-    firebase: { apiKey: "", authDomain: "", projectId: "", appId: "" }
+    firebase: {
+      apiKey: "AIzaSyBxlDiD0tEt1VpmWquj_qTnDC5Dy0P53dU",
+      authDomain: "molomon-48e02.firebaseapp.com",
+      projectId: "molomon-48e02",
+      appId: "1:109945194011:web:eb58996e97c679726b1abe"
+    }
   },
   sections: [
     { id: "watch", name: "Watch", description: "Movies and shows." },

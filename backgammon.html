@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#082f2d">
+  <meta name="theme-color" content="#17573d">
   <meta name="description" content="Two-player Backgammon, remotely or on one screen.">
   <title>Backgammon · Molomon</title>
   <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
@@ -12,18 +12,20 @@
   <script src="./backgammon.js" defer></script>
 </head>
 <body>
+  <a class="skip-link" href="#main">Skip to game</a>
   <header class="game-header"><a href="./index.html">← Molomon</a><h1>Backgammon</h1><span>Two players</span></header>
-  <main>
-    <div class="connection-row"><p class="connection" id="connection" role="status">Choose how to play.</p><button id="cancel-connection" hidden>Back</button></div>
+  <main id="main" tabindex="-1">
+    <div class="connection-row"><p class="connection" id="connection" role="status" tabindex="-1">Choose how to play.</p><button id="cancel-connection" hidden>Back</button></div>
     <section class="setup panel" id="setup" aria-labelledby="setup-title">
-      <h2 id="setup-title">Start a game</h2>
-      <div class="setup-fields">
-        <label>Your name <input id="player-name" autocomplete="given-name" maxlength="30" value="Cream"></label>
-        <label>Other player's name <input id="other-name" autocomplete="off" maxlength="30" value="Clay"><small>For one-screen play.</small></label>
-      </div>
-      <div class="button-row"><button id="start-remote" class="primary">Start remote game</button><button id="start-local">Play on one screen</button></div>
-      <p class="help">Remote: start a game, copy its invitation, and send it to your partner. Keep the host's tab open.</p>
-      <form id="join-form" class="join-row"><label>Invitation or room code <input id="join-code" autocomplete="off" spellcheck="false" placeholder="Paste here"></label><button type="submit">Join</button></form>
+      <div class="setup-brand"><h2 id="setup-title">Backgammon</h2><span class="brand-checkers" aria-hidden="true"><i class="cream"></i><i class="clay"></i></span></div>
+      <p id="setup-lede" class="lede">Start a table and invite your partner.</p>
+      <form id="start-form" class="start-form">
+        <label>Your name <input id="player-name" autocomplete="given-name" maxlength="30" placeholder="Your name" required></label>
+        <button id="start-remote" class="primary" type="submit">Start remote game</button>
+      </form>
+      <p class="help">Send the invitation directly to your partner. Keep this tab open while you play.</p>
+      <details class="join-options"><summary>Join a table</summary><form id="join-form" class="join-row"><label>Invitation or room code <input id="join-code" autocomplete="off" spellcheck="false" placeholder="Paste here"></label><button type="submit">Join</button></form></details>
+      <details class="local-options"><summary>Play on one screen</summary><div class="local-fields"><label>Other player's name <input id="other-name" autocomplete="off" maxlength="30" placeholder="Other player's name" value="Clay"></label><button id="start-local" type="button">Start local game</button></div></details>
       <button id="resume" hidden>Resume your last remote game</button>
     </section>
     <section class="panel invitation" id="invitation" hidden aria-label="Invitation">

@@ -124,14 +124,27 @@
   const VERSION = "1";
   const PREFIX = "molomon-bg1-";
   const STORAGE = "molomon:backgammon:host";
+  const NAME_STORAGE = "molomon:bg:name";
   const saved = { get(key) { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } }, set(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* Play still works when storage is blocked. */ } } };
   function randomHex(bytes) { return Array.from(crypto.getRandomValues(new Uint8Array(bytes)), n => n.toString(16).padStart(2, "0")).join(""); }
   function randomDie() { let n; do { n = crypto.getRandomValues(new Uint32Array(1))[0]; } while (n >= 4294967292); return n % 6 + 1; }
   function cleanName(value, fallback) { return String(value || "").trim().replace(/\s+/g, " ").slice(0, 30) || fallback; }
-  const ui = { mode: null, seat: 0, game: null, room: null, selected: null, connected: false, waiting: false, peer: null, conn: null, retry: null, heartbeat: null, lastHeard: 0, token: null, pending: false };
+  const ui = { mode: null, seat: 0, game: null, room: null, selected: null, connected: false, waiting: false, peer: null, conn: null, retry: null, heartbeat: null, lastHeard: 0, token: null, pending: false, invited: null };
   function node(tag, className, text) { const n = document.createElement(tag); if (className) n.className = className; if (text !== undefined) n.textContent = text; return n; }
   function status(text) { $("connection").textContent = text; }
   function error(text) { $("error").textContent = text || ""; $("error").hidden = !text; }
+  const entryLede = $("setup-lede")?.textContent || "Start a table or join your partner.";
+  function entryPresentation() {
+    $("start-remote").textContent = ui.invited ? "Join table" : "Start remote game";
+    if ($("setup-lede")) $("setup-lede").textContent = ui.invited ? "An invitation is ready. Enter your name to join." : entryLede;
+  }
+  function playerName() {
+    const input = $("player-name"), name = cleanName(input.value, "");
+    input.setCustomValidity(name ? "" : "Enter your name.");
+    if (!name) { error("Enter your name."); input.reportValidity(); input.focus(); return null; }
+    input.value = name; saved.set(NAME_STORAGE, name); return name;
+  }
+  function focusStatus() { $("connection").tabIndex = -1; $("connection").focus(); }
   function stopNetwork() {
     clearTimeout(ui.retry); clearInterval(ui.heartbeat); ui.retry = ui.heartbeat = null;
     const old = ui.peer; ui.peer = null; ui.conn = null; ui.connected = false;
@@ -358,21 +371,49 @@
     $("new-game").disabled = ui.mode === "guest";
     renderBoard(); renderOptions();
   }
-  $("start-local").addEventListener("click", () => { stopNetwork(); ui.mode = "local"; ui.game = create([cleanName($("player-name").value, "Cream"), cleanName($("other-name").value, "Clay")]); ui.waiting = false; ui.selected = null; history.replaceState(null, "", location.pathname + location.search); status("One-screen play · take turns on this device."); error(""); render(); });
-  $("start-remote").addEventListener("click", () => { error(""); startHost({ room: randomHex(10), game: create([cleanName($("player-name").value, "Cream"), "Clay"]), guestToken: null }); });
-  $("join-form").addEventListener("submit", event => { event.preventDefault(); const room = roomFrom($("join-code").value); if (!room) { error("Paste a complete invitation or its 20-character room code."); return; } error(""); startGuest(room); });
+  $("player-name").addEventListener("input", () => { $("player-name").setCustomValidity(""); if ($("error").textContent === "Enter your name.") error(""); });
+  $("start-local").addEventListener("click", () => {
+    const name = playerName(); if (!name) return;
+    stopNetwork(); ui.mode = "local"; ui.game = create([name, cleanName($("other-name").value, "Clay")]); ui.waiting = false; ui.selected = null;
+    history.replaceState(null, "", location.pathname + location.search); status("One-screen play · take turns on this device."); error(""); render(); focusStatus();
+  });
+  function startTable(event) {
+    event.preventDefault(); const name = playerName(); if (!name) return;
+    error("");
+    if (ui.invited) startGuest(ui.invited);
+    else startHost({ room: randomHex(10), game: create([name, "Clay"]), guestToken: null });
+    focusStatus();
+  }
+  const startForm = $("start-form");
+  if (startForm) startForm.addEventListener("submit", startTable);
+  else $("start-remote").addEventListener("click", startTable);
+  $("join-form").addEventListener("submit", event => {
+    event.preventDefault(); if (!playerName()) return;
+    const room = roomFrom($("join-code").value);
+    if (!room) { error("Paste a complete invitation or its 20-character room code."); $("join-code").focus(); return; }
+    error(""); startGuest(room); focusStatus();
+  });
   $("resume").hidden = !saved.get(STORAGE);
-  $("resume").addEventListener("click", () => { const table = saved.get(STORAGE); if (table && table.game && roomFrom(table.room)) { error(""); startHost(table); } });
+  $("resume").addEventListener("click", () => {
+    const table = saved.get(STORAGE);
+    if (table && table.game && roomFrom(table.room)) { $("player-name").value = cleanName(table.game.names?.[0], "Cream"); $("player-name").setCustomValidity(""); saved.set(NAME_STORAGE, $("player-name").value); error(""); startHost(table); focusStatus(); }
+  });
   $("copy-invite").addEventListener("click", async () => { try { await navigator.clipboard.writeText($("invite-link").value); $("copy-invite").textContent = "Copied"; setTimeout(() => { $("copy-invite").textContent = "Copy link"; }, 2000); } catch { $("invite-link").focus(); $("invite-link").select(); status("Select and copy the invitation above."); } });
   $("invite-link").addEventListener("focus", event => event.target.select());
   $("roll").addEventListener("click", () => act({ type: "roll" }));
   $("new-game").addEventListener("click", () => { if (ui.mode === "guest") return; if (ui.game.phase !== "won" && !confirm("Start a new game? The current board will be replaced.")) return; ui.game = create(ui.game.names); ui.selected = null; error(""); if (ui.mode === "host") broadcast(); else render(); });
-  $("leave-game").addEventListener("click", () => { stopNetwork(); ui.mode = null; ui.game = null; ui.selected = null; ui.pending = false; history.replaceState(null, "", location.pathname + location.search); $("resume").hidden = !saved.get(STORAGE); status("Choose how to play."); error(""); render(); });
+  $("leave-game").addEventListener("click", () => {
+    stopNetwork(); ui.mode = null; ui.game = null; ui.selected = null; ui.pending = false; ui.waiting = false; ui.invited = null;
+    history.replaceState(null, "", location.pathname + location.search); $("resume").hidden = !saved.get(STORAGE); status("Choose how to play."); error(""); entryPresentation(); render(); $("player-name").focus();
+  });
   $("cancel-connection").addEventListener("click", () => $("leave-game").click());
   document.addEventListener("keydown", event => { if (event.key === "Escape" && ui.selected !== null) { ui.selected = null; renderBoard(); renderOptions(); } });
-  const invited = roomFrom(location.hash.slice(1));
+  ui.invited = roomFrom(location.hash.slice(1));
   const names = saved.get("molomon-names");
-  if (Array.isArray(names)) { $("player-name").value = cleanName(names[0], "Cream"); $("other-name").value = cleanName(names[1], "Clay"); }
-  if (invited) { $("join-code").value = invited; if (!Array.isArray(names)) $("player-name").value = "Clay"; status("Invitation ready · enter your name, then Join."); }
+  const rememberedName = saved.get(NAME_STORAGE);
+  $("player-name").value = typeof rememberedName === "string" && rememberedName.trim() ? cleanName(rememberedName, "") : Array.isArray(names) && typeof names[0] === "string" ? cleanName(names[0], "") : "";
+  if (Array.isArray(names)) $("other-name").value = cleanName(names[1], "Clay");
+  if (ui.invited) { $("join-code").value = ui.invited; status("Invitation ready · enter your name, then Join table."); }
+  entryPresentation();
   render();
 })(typeof window !== "undefined" ? window : globalThis);

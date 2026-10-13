@@ -4,7 +4,7 @@
  * Network first makes a refresh fetch the current published config and files.
  */
 "use strict";
-const CACHE = "molomon-static-v4";
+const CACHE = "molomon-static-v5";
 const STATIC_FILES = [
   "./", "./index.html", "./config.js", "./app.js", "./styles.css",
   "./install.js", "./manifest.webmanifest", "./assets/favicon.svg", "./assets/nook.svg",
