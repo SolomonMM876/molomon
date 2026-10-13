@@ -14,6 +14,7 @@ PUBLIC_FILES = (
     "backgammon.html", "backgammon.css", "backgammon.js",
     "notes.html", "notes.css", "notes.js",
     "memories.html", "memories.css",
+    "watchroom.html", "watchroom.css", "watchroom.js",
     "suggestions.html", "suggestions.css", "suggestions.js",
     "secret.html", "secret.css", "secret.js",
     "manifest.webmanifest", "install.js", "service-worker.js",

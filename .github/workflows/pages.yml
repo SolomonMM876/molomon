@@ -28,6 +28,7 @@ jobs:
           node test/calendar-test.cjs
           node test/notes-test.cjs
           node test/pwa-test.cjs
+          node test/watchroom-test.cjs
       - name: Prepare public files
         run: python3 scripts/prepare-pages.py
       - name: Upload public files
