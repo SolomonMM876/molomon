@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#082f2d">
+  <meta name="referrer" content="no-referrer">
+  <title>Memories · Molomon</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="notes.css">
+  <link rel="stylesheet" href="memories.css">
+  <script src="config.js" defer></script>
+  <script src="notes.js" defer></script>
+</head>
+<body data-notes-view="memories">
+  <a class="skip-link" href="#notes-main">Skip to memories</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="index.html"><img src="assets/favicon.svg" width="30" height="30" alt="">Molomon</a>
+      <nav aria-label="Memories navigation" class="notes-nav">
+        <a href="index.html">Home</a>
+        <a href="notes.html">Notes</a>
+        <button id="open-note-settings" type="button" aria-haspopup="dialog">Settings</button>
+      </nav>
+    </div>
+  </header>
+  <main class="notes-main memories-main" id="notes-main" tabindex="-1">
+    <div class="notes-heading">
+      <div><p class="notes-eyebrow">Our story</p><h1>Memories</h1></div>
+      <button class="notes-button primary" id="new-note" type="button">Add memory <span aria-hidden="true">＋</span></button>
+    </div>
+    <p class="memories-intro">Little moments, things we have done together, and notes we want to keep.</p>
+    <p class="notes-status" id="sync-status" role="status" aria-live="polite">Sign in to open the same private space as Notes.</p>
+    <div class="notes-actions account-actions">
+      <button class="notes-button primary" id="sign-in" type="button" hidden>Sign in with Google</button>
+      <button class="notes-button" id="sign-out" type="button" hidden>Sign out</button>
+    </div>
+    <p class="notes-message" id="message" role="status" aria-live="polite" hidden></p>
+    <section id="note-list" class="notes-list-section" aria-labelledby="list-heading">
+      <div class="list-heading"><h2 id="list-heading">Memories</h2><span class="note-count" id="note-count">0 memories</span></div>
+      <div class="book-toolbar" hidden>
+        <div id="book-tabs" class="book-tabs" role="tablist" aria-label="Notebooks"></div>
+        <div class="book-actions"><button class="notes-button" id="add-book" type="button">Add book</button><button class="notes-button" id="rename-book" type="button">Edit book</button></div>
+      </div>
+      <div class="notes-grid" id="notes-grid" role="list" aria-labelledby="list-heading"></div>
+    </section>
+    <noscript><p class="notes-empty">Enable JavaScript to keep your memories here.</p></noscript>
+  </main>
+  <footer class="site-footer"><span>Molomon</span><a href="index.html">Home <span aria-hidden="true">←</span></a></footer>
+  <dialog id="notes-settings" aria-labelledby="notes-settings-title">
+    <div class="editor-heading"><h2 id="notes-settings-title">Memory settings</h2><button class="notes-button close-editor" type="button" id="close-note-settings" aria-label="Close settings">×</button></div>
+    <p class="notes-message" id="settings-message" role="status" aria-live="polite" hidden></p>
+    <div class="notes-identity" id="notes-identity"><label class="author-label" for="author-name">Writing as<input id="author-name" maxlength="80" autocomplete="given-name" value="You"></label></div>
+    <section class="notes-storage" id="sharing" aria-labelledby="sharing-title">
+      <h3 id="sharing-title">Our shared space</h3>
+      <p id="sharing-description">Memories use the same private shared space as Notes. Open your existing invitation to keep them together.</p>
+      <div class="notes-actions"><button class="notes-button" id="create-space" type="button" disabled>Start shared space</button><button class="notes-button" id="use-device" type="button" hidden>Use device memories</button><button class="notes-button" id="retry-space" type="button" hidden>Reconnect</button></div>
+      <form id="join-form" class="join-form"><label for="space-code">Partner’s private Notes invitation<input id="space-code" spellcheck="false" autocomplete="off" placeholder="Paste here"></label><button class="notes-button" id="join-space" type="submit" disabled>Join</button></form>
+      <div class="private-invite" id="private-invite" hidden><label for="invite-link">Private invitation<input id="invite-link" readonly spellcheck="false"></label><button class="notes-button" id="copy-invite" type="button">Copy link</button></div>
+      <p class="sharing-help" id="setup-help">Memories share the Notes setup for your two Google accounts. <a href="https://github.com/SolomonMM876/molomon/blob/main/docs/SHARED_NOTES_SETUP.md" target="_blank" rel="noopener noreferrer">Setup instructions ↗</a></p>
+    </section>
+    <section class="notes-backups" aria-labelledby="backups-title">
+      <h3 id="backups-title">Notes &amp; memories</h3>
+      <p class="memories-backup-help">A backup includes all notes and memories in this space.</p>
+      <div class="notes-actions"><button class="notes-button" id="export-notes" type="button">Export backup</button><label class="notes-button import-button">Import backup<input id="import-notes" type="file" accept=".json,application/json"></label></div>
+    </section>
+    <div class="editor-actions"><button class="notes-button" type="button" id="done-note-settings">Done</button></div>
+  </dialog>
+  <dialog id="note-editor" aria-labelledby="editor-title">
+    <form id="note-form">
+      <div class="editor-heading"><h2 id="editor-title">Add memory</h2><button class="notes-button close-editor" type="button" id="close-editor" aria-label="Close memory">×</button></div>
+      <label for="note-book" hidden>Book<select id="note-book"></select></label>
+      <label for="memory-date">Date <span class="optional-label">(optional)</span><input id="memory-date" type="date" aria-describedby="memory-date-hint"></label>
+      <p class="memory-date-hint" id="memory-date-hint">The day it happened, whenever you want to remember it.</p>
+      <label for="note-title">Title<input id="note-title" maxlength="160" required autocomplete="off" placeholder="A moment to keep"></label>
+      <label for="note-body">Little note<textarea id="note-body" maxlength="20000" rows="6" placeholder="What happened? What do you want to remember?"></textarea></label>
+      <p class="draft-hint" id="draft-hint">Draft saved on this device.</p>
+      <div class="edit-conflict" id="edit-conflict" role="alert" hidden>
+        <p id="conflict-text">This memory changed while you were editing. Your draft is still here.</p>
+        <div class="notes-actions"><button class="notes-button" id="load-latest" type="button">Load latest</button><button class="notes-button" id="save-separate" type="button">Save as new memory</button></div>
+      </div>
+      <div class="editor-actions"><button class="notes-button danger" id="delete-note" type="button" hidden>Delete</button><button class="notes-button" id="cancel-editor" type="button">Close</button><button class="notes-button primary" id="save-note" type="submit">Save</button></div>
+    </form>
+  </dialog>
+  <dialog id="book-editor" aria-labelledby="book-editor-title">
+    <form id="book-form"><h2 id="book-editor-title">Add book</h2><label for="book-name">Book name<input id="book-name" maxlength="80" required autocomplete="off"></label><p id="book-error" role="alert" hidden></p><div class="editor-actions"><button class="notes-button danger" id="delete-book" type="button" hidden>Delete book</button><button class="notes-button" id="close-book" type="button">Close</button><button class="notes-button primary" id="save-book" type="submit">Save</button></div></form>
+  </dialog>
+  <dialog id="confirm-dialog" aria-labelledby="confirm-title">
+    <form method="dialog"><h2 id="confirm-title">Confirm</h2><p id="confirm-description"></p><div class="editor-actions"><button class="notes-button" value="cancel">Cancel</button><button class="notes-button primary" value="confirm" id="confirm-action">Confirm</button></div></form>
+  </dialog>
+</body>
+</html>

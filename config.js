@@ -43,6 +43,7 @@ window.MOLOMON_CONFIG = {
     { section: "play", icon: "play" },
     { link: "calendar" },
     { link: "shared-notes" },
+    { link: "memories" },
     { section: "together", icon: "music" }
   ],
   secondarySections: ["talk", "favorites"],
@@ -150,6 +151,14 @@ window.MOLOMON_CONFIG = {
       description: "Shared notes, lists, and plans.",
       icon: "note",
       url: "./notes.html"
+    },
+    {
+      id: "memories",
+      section: "favorites",
+      title: "Memories",
+      description: "Little notes about our moments together.",
+      icon: "bookmark",
+      url: "./memories.html"
     },
     {
       id: "favorite-website",

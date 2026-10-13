@@ -1,6 +1,6 @@
 # Molomon
 
-A shared starting page with circular navigation around the white cat and mushrooms. Watch, Play, and Together open their own category pages with circular app choices; Calendar and Notes open the included apps. Talk and Favorites are smaller header links. Vanilla HTML, CSS, and JavaScript; no framework or package install required.
+A shared starting page with circular navigation around the white cat and mushrooms. Watch, Play, and Together open their own category pages with circular app choices; Calendar, Notes, and Memories open the included apps. Talk and Favorites are smaller header links. Vanilla HTML, CSS, and JavaScript; no framework or package install required.
 
 Use **Add names** on the homepage to personalize it. Names are saved on that browser/device. Calendar, Backgammon, and Notes open the included activities; Watchroom and Rummy 500 open their existing websites.
 
@@ -44,6 +44,8 @@ Connected Google calendars refresh every minute while visible, and when you retu
 Backgammon uses a Rummy-style name-entry screen. Enter your display name to start a remote table, or open an invitation and choose **Join table**. Your name is remembered on this device; no account is required. **Play on one screen** opens local pass-and-play. The host keeps the game tab open. Room invitations belong in your private chat, not `config.js`. This is a casual game without a doubling cube. Remote connections use WebRTC and PeerJS; some networks block direct connections.
 
 Notes uses notebook tabs and bullet lists. Shared cloud storage needs [Firebase setup](docs/SHARED_NOTES_SETUP.md). Put Firebase's public web-app configuration in `config.js` → `notes.firebase`, enable Google sign-in, and restrict the database rules to your two verified Google accounts. Until configured, the notes preview saves on this device. Invitations identify your space; they do not give anyone else access. Export backups from the notes page.
+
+Memories opens from its own homepage circle. Add a title, an optional date, and a little note about something you did together. Cards appear newest memory first, and can be edited or deleted. Memories uses the same private space, Google sign-in, drafts, and conflict protection as Notes; an existing Notes invitation works here too. On another device, sign in and join that same space through Settings. The built-in **Memories** notebook in Notes holds these entries as plain text, including their dates. **Export backup** on either page saves both notes and memories. Personal memories are never bundled into the public website.
 
 GitHub Pages serves the homepage and static files publicly. Private notes are protected by Firebase's server rules after setup. Do not put private room invitations, access tokens, credentials, or private content into `config.js`. [Private GitHub Pages sites](https://docs.github.com/en/enterprise-cloud@latest/pages/getting-started-with-github-pages/changing-the-visibility-of-your-github-pages-site) require an organization using GitHub Enterprise Cloud; a personal Pages hub does not provide that access gate.
 

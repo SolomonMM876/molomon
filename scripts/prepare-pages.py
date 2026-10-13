@@ -13,6 +13,7 @@ PUBLIC_FILES = (
     "calendar.html", "calendar.css", "calendar.js",
     "backgammon.html", "backgammon.css", "backgammon.js",
     "notes.html", "notes.css", "notes.js",
+    "memories.html", "memories.css",
     "suggestions.html", "suggestions.css", "suggestions.js",
     "secret.html", "secret.css", "secret.js",
     "manifest.webmanifest", "install.js", "service-worker.js",
