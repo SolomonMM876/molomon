@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#082f2d">
+  <meta name="referrer" content="no-referrer">
+  <title>Watchroom · Molomon</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="assets/app-icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="watchroom.css">
+  <script src="config.js" defer></script>
+  <script src="watchroom.js" defer></script>
+  <script src="install.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#watchroom-main">Skip to Watchroom</a>
+  <header class="site-header"><div class="header-inner"><a class="brand" href="index.html"><img src="assets/favicon.svg" width="30" height="30" alt="">Molomon</a><nav class="watchroom-nav" aria-label="Watchroom navigation"><a href="index.html">Home</a></nav></div></header>
+  <main id="watchroom-main" class="watchroom-main" tabindex="-1">
+    <section class="watchroom-card" aria-labelledby="watchroom-heading">
+      <div class="watchroom-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="14" rx="3"></rect><path d="m10 9 5 3-5 3Z"></path></svg></div>
+      <p class="watchroom-eyebrow">Watch together</p>
+      <h1 id="watchroom-heading">Our Watchroom</h1>
+      <p class="watchroom-description">The same shared room, whenever we want to watch.</p>
+      <p id="watchroom-status" class="watchroom-status" role="status" aria-live="polite">Opening our shared room…</p>
+      <div id="watchroom-actions" class="watchroom-actions">
+        <button id="watchroom-sign-in" class="open-button" type="button" hidden disabled>Sign in with Google</button>
+        <button id="watchroom-retry" class="open-button" type="button" hidden>Try again</button>
+        <button id="watchroom-sign-out" class="watchroom-secondary" type="button" hidden>Sign out</button>
+      </div>
+      <p id="watchroom-help" class="watchroom-help" hidden><a href="https://github.com/SolomonMM876/molomon/blob/main/docs/WATCHROOM_SETUP.md" target="_blank" rel="noopener noreferrer">Shared room setup instructions ↗</a></p>
+      <noscript><p class="watchroom-status">Enable JavaScript to open our shared Watchroom.</p></noscript>
+    </section>
+  </main>
+  <footer class="site-footer"><span>Molomon</span><a href="index.html"><span aria-hidden="true">←</span> Home</a></footer>
+</body>
+</html>

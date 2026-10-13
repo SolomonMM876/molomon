@@ -7,8 +7,10 @@
   Talk remains a secondary link. Every built-in page has a Home link.
 - Preserve the ocean green / seafoam palette, white cat and mushrooms, soft
   circular homepage, and the calendar's white background.
-- Keep Watchroom and Rummy 500 unchanged. Link to their homepages, never private
-  room invitations. Unfinished cards have disabled Coming soon buttons.
+- Watchroom opens the reusable room through the private Google/Firebase
+  launcher. Keep its invitation in private Firebase storage, never public
+  configuration or source. Keep Rummy 500 linked to its homepage and unchanged.
+  Unfinished cards have disabled Coming soon buttons.
 - GitHub Pages is public. Private notes and suggestions require Firebase Google
   sign-in and server rules restricted to the two verified Google accounts.
   Never replace backend authorization with a client-side password or allowlist.
@@ -19,7 +21,8 @@
   Prepare reviewable changes; do not push or publish without approval in chat.
 - Run checks relevant to changes. The Pages workflow runs these portable checks:
   `node test/backgammon-test.cjs`, `node test/calendar-test.cjs`,
-  `node test/notes-test.cjs`, and `node test/pwa-test.cjs`.
+  `node test/notes-test.cjs`, `node test/pwa-test.cjs`, and
+  `node test/watchroom-test.cjs`.
 - Check phone layout and keyboard behavior after layout or navigation changes.
   Preserve reduced-motion behavior and accessible labels.
 - Add new public files to `scripts/prepare-pages.py` and the service worker's

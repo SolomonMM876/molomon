@@ -4,7 +4,7 @@
  * Network first makes a refresh fetch the current published config and files.
  */
 "use strict";
-const CACHE = "molomon-static-v9-notes";
+const CACHE = "molomon-static-v10-notes";
 const STATIC_FILES = [
   "./", "./index.html", "./config.js", "./app.js", "./styles.css",
   "./install.js", "./manifest.webmanifest", "./assets/favicon.svg", "./assets/nook.svg",
@@ -15,6 +15,7 @@ const STATIC_FILES = [
   "./memories.html", "./memories.css",
   "./category.html", "./category.css", "./category.js",
   "./suggestions.html", "./suggestions.css", "./suggestions.js",
+  "./watchroom.html", "./watchroom.css", "./watchroom.js",
   "./secret.html", "./secret.css", "./secret.js", "./assets/fish-bone.svg"
 ];
 const PUBLIC_URLS = new Set(STATIC_FILES.map(path => new URL(path, self.registration.scope).href));

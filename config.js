@@ -9,7 +9,7 @@
  *      Null, blank, or invalid URLs produce a disabled "Coming soon" button.
  * icon: watch, talk, chat, play, cards, music, spark, bookmark, note, photo, or calendar.
  *
- * This is a public hub. Use Watchroom's homepage, never individual room invites.
+ * This is a public hub. Watchroom opens through a private signed-in launcher.
  * Do not add private invitation tokens or credentials to this file.
  */
 window.MOLOMON_CONFIG = {
@@ -52,9 +52,9 @@ window.MOLOMON_CONFIG = {
       id: "watchroom",
       section: "watch",
       title: "Watchroom",
-      description: "Open our watch-together homepage.",
+      description: "Open our shared room.",
       icon: "watch",
-      url: "https://solomonmm876.github.io/watchroom/"
+      url: "./watchroom.html"
     },
     {
       id: "watchlist",

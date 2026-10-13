@@ -2,7 +2,7 @@
 
 A shared starting page with circular navigation around the white cat and mushrooms. Watch, Play, and Together open their own category pages with circular app choices; Calendar, Notes, and Memories open the included apps. Talk and Favorites are smaller header links. Vanilla HTML, CSS, and JavaScript; no framework or package install required.
 
-Use **Add names** on the homepage to personalize it. Names are saved on that browser/device. Calendar, Backgammon, and Notes open the included activities; Watchroom and Rummy 500 open their existing websites.
+Use **Add names** on the homepage to personalize it. Names are saved on that browser/device. Calendar, Backgammon, and Notes open the included activities; Watchroom opens the same private shared room, and Rummy 500 opens its existing website.
 
 Use **Add to phone** for installation. On Android, supported browsers show an install prompt. On iPhone, open Molomon in Safari, tap **Share → Add to Home Screen**. Installed pages use the same website and receive updates when refreshed. Offline use needs an initial online visit; live calendars, cloud notes, and remote games need a connection.
 
@@ -33,9 +33,11 @@ To add a website, copy a link entry and change its values:
 
 Set `url` to a complete `https://...` destination, or `./page.html` for an included activity, to enable **Open**. Keep `url: null` for unfinished cards: they show **Coming soon** / **Needs a link** and have a disabled button. Options and website links use the same tab. Use Home inside the included apps, or Browser Back after visiting an external site. Available icons: `watch`, `talk`, `chat`, `play`, `cards`, `music`, `spark`, `bookmark`, `note`, `photo`, `calendar`.
 
-Watchroom points to its homepage. Keep individual room invitations and private access links out of this public hub. Rummy 500 is linked as a separate website; this project does not change either existing website.
+Watchroom uses an included launcher that reads its room settings only after the same private Google/Firebase authorization used by Notes. Keep individual room invitations and private access links out of this public hub. Rummy 500 is linked as a separate website.
 
 ## Included activities
+
+Watchroom opens the same shared room and skips its create/join and name-entry page. Signed-in approved Google accounts open it automatically; otherwise the launcher asks for Google sign-in. Configure the reusable room once using [the private Watchroom setup](docs/WATCHROOM_SETUP.md). Either person can arrive first and keep the room open for the other.
 
 Calendar combines two people's busy time and finds free slots within their chosen daily hours. Pick both time zones; proposed times appear in each zone. Import Google Calendar exports (`.ics`) to use it immediately. For live Google sign-in, follow [the one-time setup](docs/GOOGLE_CALENDAR_SETUP.md), then put the public web client ID in `config.js` → `calendar.googleClientId`. No client secret belongs in the website.
 

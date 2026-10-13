@@ -1,0 +1,20 @@
+.watchroom-nav a { display: inline-flex; align-items: center; min-height: 44px; padding: 10px 0; color: var(--muted); font-size: 13px; text-decoration: none; }
+.watchroom-nav a:hover { color: var(--seafoam); }
+.watchroom-main { display: grid; place-items: center; width: min(100% - 48px, 640px); margin: 0 auto; padding: 54px 0 64px; min-height: calc(100svh - 180px); }
+.watchroom-card { width: 100%; padding: 36px; border: 1px solid var(--highlight-border); border-radius: 28px; background: var(--panel); box-shadow: inset 0 1px 0 #ffffff0b, 0 0 24px #ffffff03; }
+.watchroom-icon { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; background: #244c40; color: var(--seafoam); margin-bottom: 24px; }
+.watchroom-icon svg { width: 28px; height: 28px; }
+.watchroom-eyebrow { margin: 0 0 7px; font-size: 12px; color: var(--muted); }
+.watchroom-card h1 { font-size: clamp(28px, 5vw, 38px); letter-spacing: -1px; }
+.watchroom-description { margin: 12px 0 28px; color: var(--muted); font-size: 14px; line-height: 1.7; }
+.watchroom-status { margin: 0; color: var(--seafoam); font-size: 14px; line-height: 1.7; overflow-wrap: anywhere; }
+.watchroom-status.error { color: #edb89b; }
+.watchroom-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 20px; }
+.watchroom-actions .open-button { margin: 0; cursor: pointer; }
+.watchroom-secondary { min-height: 44px; padding: 10px 15px; border: 1px solid var(--border); border-radius: 999px; background: transparent; color: var(--muted); font-size: 13px; cursor: pointer; }
+.watchroom-secondary:hover { border-color: #ffffff45; color: var(--text); }
+.watchroom-help { margin: 20px 0 0; font-size: 12px; line-height: 1.7; color: var(--muted); }
+.watchroom-help a { color: var(--seafoam); }
+@media (max-width: 760px) { .watchroom-main { width: calc(100% - 32px); padding: 32px 0 42px; } }
+@media (max-width: 520px) { .watchroom-card { padding: 26px 22px; } .watchroom-actions { align-items: stretch; } .watchroom-actions .open-button { flex: 1 0 auto; } }
+@media (max-width: 350px) { .watchroom-main { width: calc(100% - 24px); } }
