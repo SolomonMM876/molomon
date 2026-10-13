@@ -33,10 +33,10 @@ The app loads the pinned Firebase Web SDK `12.19.0` from Google's `gstatic` only
 
 ## Start your shared space
 
-1. Open Notes and choose **Sign in with Google**, using one of your two permitted accounts. Other accounts receive “This Google account has not been given access.” Enter your name under **Writing as**.
-2. Choose **Create shared space**. Wait for **Shared notes · connected**.
-3. Copy the private invitation and send it directly to your partner. Keep it out of `config.js`, the README, and any public link card.
-4. Your partner opens that invitation, signs in with the other permitted Google account, sets their author name, and uses the same books and notes. The cloud keeps them even when neither page is open.
+1. Open Notes and choose **Sign in with Google**, using one of your two permitted accounts. Other accounts receive “This Google account has not been given access.” Open **Settings** to set your name under **Writing as**.
+2. In Settings, choose **Start shared notes**. Wait for **Shared notes · connected**.
+3. Use **Copy link** in Settings to copy the private invitation and send it directly to your partner. Keep it out of `config.js`, the README, and any public link card.
+4. Your partner opens that invitation, signs in with the other permitted Google account, sets their author name in Settings, and uses the same books and notes. The cloud keeps them even when neither page is open.
 5. Bookmark the invitation privately on your other devices and sign in with the same Google account there. The space contains up to two account identities; multiple devices use the account's same identity.
 
 An invitation contains a random 128-bit space ID that identifies a space. It grants no access to an unapproved account. There is no public space directory. Keep the link private so your space is easy to find only for you two. Google/Firebase operates the cloud storage; the notes are not end-to-end encrypted.
@@ -46,11 +46,12 @@ Signing out hides private notes and disconnects listeners. Clearing browser data
 ## Editing, offline use, and backups
 
 - **Add book** creates a category tab. **Edit book** renames it or deletes it after confirmation. Deleting a book moves its notes into **General**; it does not delete their text. Arrow keys, Home, and End move between tabs.
-- Each line in the note editor becomes one bullet point. Notes remain plain text and can contain lists, plans, and ideas. Existing backups from before books were added import into General.
+- Selecting a book opens its white editing page directly. Notes within it have their own title tabs; select a tab to edit without an Open button or popup. **New note** starts another note in the selected book. Each line is one bullet point. Existing backups from before books were added import into General.
 - **Save** writes one note at a time. Shared saves require a connection. Both people receive new versions through a live listener. Book names also use transaction revisions.
 - If both people edit the same revision, the first save succeeds. The second editor keeps their draft and offers **Load latest** or **Save as new note**. There is no silent overwrite. A deletion leaves a revision marker so an old edit cannot recreate the deleted note. [Firestore transactions](https://firebase.google.com/docs/firestore/manage-data/transactions).
-- Once authorization has been confirmed in the current page, an offline connection leaves its cached notes readable. An open draft is saved in that device's browser storage and can be reopened from its note, or **New note** for a new draft. On a fresh page load, private cache stays hidden until a server authorization check succeeds; reconnect before reopening. Wait for the connected indicator, then press Save. Drafts do not transfer to the other device.
+- Switching book or note tabs keeps unfinished drafts in that device's browser storage. Select the note tab, or **New note** in its book, to resume a draft. **Save** keeps the editing page open. Once authorization has been confirmed in the current page, an offline connection leaves its cached notes readable. On a fresh page load, private cache stays hidden until a server authorization check succeeds; reconnect before reopening. Wait for the connected indicator, then press Save. Drafts do not transfer to the other device.
 - **Export backup** downloads all notes and book assignments as JSON, including notes outside the selected tab. It includes text, authors, and timestamps; it omits room invitations and credentials.
+- Invitations, connection controls, and backup import/export are under **Settings**. The main Notes page shows books and bullet lists, with a status line distinguishing shared storage from device notes.
 - **Import backup** adds new copies after confirmation and preserves existing notes. This also moves device-only notes into a shared space: export in Device notes, open the shared space, and import. Imports allow up to 200 notes / 5 MB; titles allow 160 characters and bodies 20,000.
 - If a cloud import stops partway through, its message reports the successful count. Re-importing adds duplicate copies, so remove the imported prefix from the backup before retrying, or delete the duplicates afterward.
 

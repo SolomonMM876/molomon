@@ -39,6 +39,8 @@
   if (typeof document === "undefined") return;
 
   const $ = id => document.getElementById(id);
+  const inlineNotes = true;
+  const selectedNotes = new Map();
   const firebaseConfig = root.MOLOMON_CONFIG?.notes?.firebase || {};
   const configured = ["apiKey", "authDomain", "projectId", "appId"].every(key => typeof firebaseConfig[key] === "string" && firebaseConfig[key].trim());
   const state = { mode: "device", room: null, records: [], books: [], book: "default", connected: false, busy: false, unsubscribe: null, unsubscribeBooks: null, editor: null, bookEditor: null, firebase: null, uid: null, locked: configured, authGeneration: 0, observedAuthUid: null };
@@ -48,7 +50,8 @@
   function remove(key) { try { localStorage.removeItem(key); } catch (_) { /* The current visit still works. */ } }
   function cacheKey() { return state.mode === "device" ? localKey : "molomon-notes-space-" + state.room; }
   function booksKey() { return cacheKey() + "-books"; }
-  function draftKey(id) { return "molomon-notes-draft-" + (state.room || "device") + "-" + (id || "new"); }
+  function draftKey(id, book = state.book) { return "molomon-notes-draft-" + (state.room || "device") + "-" + (id || (inlineNotes ? "new-" + book : "new")); }
+  function selectionKey() { return cacheKey() + ":" + state.book; }
   function cachedRecords(key) {
     const records = read(key, []);
     if (!Array.isArray(records)) return [];
@@ -62,19 +65,27 @@
   function resolvedBook(note) { return allBooks().some(book => book.id === note.notebookId) ? note.notebookId : "default"; }
   function randomId() { return [...crypto.getRandomValues(new Uint8Array(16))].map(n => n.toString(16).padStart(2, "0")).join(""); }
   function node(tag, className, text) { const item = document.createElement(tag); if (className) item.className = className; if (text !== undefined) item.textContent = text; return item; }
-  function message(text, error = false) { $("message").textContent = text || ""; $("message").hidden = !text; $("message").classList.toggle("error", error); }
+  function message(text, error = false) {
+    for (const id of ["message", "settings-message"]) {
+      $(id).textContent = text || ""; $(id).classList.toggle("error", error);
+      $(id).hidden = !text || (id === "settings-message" && !$("notes-settings").open);
+    }
+  }
   function author() { return $("author-name").value.trim().slice(0, 80) || "You"; }
   function dateLabel(value) { const date = new Date(value); return Number.isNaN(date.valueOf()) ? "" : new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(date); }
   function writable() { return !state.locked && (state.mode === "device" || (state.connected && navigator.onLine)); }
   function syncStatus() {
     const status = $("sync-status");
     status.classList.toggle("offline", state.mode === "cloud" && !state.connected);
-    status.textContent = state.locked ? "Sign in with one of your two authorized Google accounts." : state.mode === "device" ? (configured ? "Device notes · saved in this browser." : "Device preview · shared storage needs setup.") : state.busy ? "Saving to shared space…" : state.connected && navigator.onLine ? "Shared notes · connected." : "Shared notes · offline or connecting. Cached notes and drafts stay on this device.";
-    $("save-note").disabled = state.busy || !writable();
+    const label = "notes";
+    status.textContent = state.locked ? "Sign in with one of your two authorized Google accounts." : state.mode === "device" ? (configured ? `Device ${label} · saved in this browser.` : "Device preview · shared storage needs setup.") : state.busy ? "Saving to shared space…" : state.connected && navigator.onLine ? `Shared ${label} · connected.` : `Shared ${label} · offline or connecting. Cached notes and drafts stay on this device.`;
+    $("save-note").disabled = state.busy || !writable() || !$("edit-conflict").hidden;
     $("delete-note").disabled = state.busy || !writable();
     $("save-separate").disabled = state.busy || !writable();
+    for (const id of ["note-title", "note-body", "note-book"]) $(id).disabled = state.busy || state.locked;
     $("new-note").disabled = state.busy || state.locked;
     $("create-space").disabled = !configured || state.busy || state.locked;
+    $("create-space").hidden = state.mode === "cloud";
     $("join-space").disabled = !configured || state.busy || state.locked;
     $("import-notes").disabled = state.busy || !writable();
     $("export-notes").disabled = state.busy || state.locked;
@@ -85,10 +96,13 @@
     $("sign-in").hidden = !configured || !state.locked;
     $("sign-in").disabled = state.busy;
     $("sign-out").hidden = !configured || state.locked;
+    $("sign-out").disabled = state.busy;
+    $("notes-identity").hidden = state.locked;
   }
   function render() {
+    const focusedTab = document.activeElement?.matches(".book-tab, .note-tab") ? document.activeElement.id : null;
     syncStatus();
-    $("sharing-title").textContent = state.mode === "cloud" ? "Shared space" : "Device notes";
+    $("sharing-title").textContent = state.mode === "cloud" ? "Shared notes" : "Device notes";
     $("sharing-description").textContent = state.mode === "cloud" ? "Both of you can edit here. Share the invitation privately." : "Saved in this browser. Export a backup to keep a copy.";
     $("list-heading").textContent = state.mode === "cloud" ? "Shared books" : "Your books";
     $("note-list").hidden = state.locked;
@@ -101,42 +115,85 @@
     const tabs = $("book-tabs"); tabs.replaceChildren();
     allBooks().forEach((book, index) => {
       const tab = node("button", "book-tab", book.name); tab.type = "button"; tab.id = "book-tab-" + book.id; tab.setAttribute("role", "tab"); tab.setAttribute("aria-controls", "notes-grid"); tab.setAttribute("aria-selected", String(book.id === state.book)); tab.tabIndex = book.id === state.book ? 0 : -1;
-      tab.addEventListener("click", () => { state.book = book.id; render(); $("book-tab-" + book.id).focus(); });
-      tab.addEventListener("keydown", event => { const books = allBooks(); let next; if (event.key === "ArrowRight") next = (index + 1) % books.length; if (event.key === "ArrowLeft") next = (index + books.length - 1) % books.length; if (event.key === "Home") next = 0; if (event.key === "End") next = books.length - 1; if (next !== undefined) { event.preventDefault(); state.book = books[next].id; render(); $("book-tab-" + state.book).focus(); } });
+      tab.disabled = state.busy;
+      tab.addEventListener("click", () => selectBook(book.id));
+      tab.addEventListener("keydown", event => { const books = allBooks(); let next; if (event.key === "ArrowRight") next = (index + 1) % books.length; if (event.key === "ArrowLeft") next = (index + books.length - 1) % books.length; if (event.key === "Home") next = 0; if (event.key === "End") next = books.length - 1; if (next !== undefined) { event.preventDefault(); selectBook(books[next].id); } });
       tabs.append(tab);
     });
     $("notes-grid").setAttribute("aria-labelledby", "book-tab-" + state.book);
     const notes = state.records.filter(note => !note.deleted && resolvedBook(note) === state.book).sort((a, b) => (Date.parse(b.updatedAt) || 0) - (Date.parse(a.updatedAt) || 0));
     $("note-count").textContent = `${notes.length} ${notes.length === 1 ? "note" : "notes"}`;
-    const grid = $("notes-grid"); grid.replaceChildren();
-    if (!notes.length) grid.append(node("p", "notes-empty", "No notes yet. Add a note, a plan, or a list."));
-    for (const note of notes) {
-      const card = node("article", "note-card"), list = node("ul", "note-preview");
-      const lines = note.body.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
-      lines.slice(0, 7).forEach(line => list.append(node("li", "", line.length > 180 ? line.slice(0, 180) + "…" : line)));
-      if (lines.length > 7) list.append(node("li", "", "…"));
-      card.append(node("h3", "", note.title), list, node("p", "note-meta", `${note.authorName || "You"} · ${dateLabel(note.updatedAt)}`));
-      const edit = node("button", "notes-button", "Open"); edit.type = "button"; edit.setAttribute("aria-label", `Open note ${note.title}`); edit.addEventListener("click", () => openEditor(note.id)); card.append(edit); grid.append(card);
+    renderInlineNotes(notes);
+    if (focusedTab && $(focusedTab)) $(focusedTab).focus();
+  }
+  function selectBook(id) {
+    if (state.busy || state.locked) return;
+    if (inlineNotes && state.book !== id) closeEditor();
+    state.book = id; render(); $("book-tab-" + id).focus();
+  }
+  function renderInlineNotes(notes) {
+    if (state.locked) { $("note-editor").hidden = true; return; }
+    if (state.editor && (state.editor.book !== state.book || state.editor.scope !== cacheKey())) closeEditor();
+    if (!state.editor) {
+      const key = selectionKey(), selected = selectedNotes.get(key);
+      const id = selectedNotes.has(key) && selected === null ? null : notes.some(note => note.id === selected) ? selected : notes[0]?.id || null;
+      openEditor(id, false, false);
     }
-    if (state.editor?.id) {
+    const tabs = $("note-tabs"), items = notes.map(note => ({ id: note.id, title: note.title }));
+    // Keep a deleted note's unfinished draft accessible until its owner chooses
+    // Load latest or Save as new note. Switching tabs must not discard it.
+    if (state.editor.id && !items.some(note => note.id === state.editor.id)) items.push({ id: state.editor.id, title: "Your draft" });
+    const newDraft = read(draftKey(null), null);
+    const pendingDraft = newDraft?.id === null && typeof newDraft.title === "string" && typeof newDraft.body === "string" && (newDraft.title.trim() || newDraft.body.trim());
+    if (!state.editor.id || pendingDraft) items.push({ id: null, title: pendingDraft ? (newDraft.title.trim() || "New note") + " (draft)" : "New note" });
+    tabs.replaceChildren(); tabs.setAttribute("aria-label", "Notes in " + allBooks().find(book => book.id === state.book).name);
+    items.forEach((note, index) => {
+      const tab = node("button", "note-tab", note.title); tab.type = "button"; tab.id = "note-tab-" + (note.id || "new");
+      tab.setAttribute("role", "tab"); tab.setAttribute("aria-controls", "note-editor"); tab.setAttribute("aria-selected", String(note.id === state.editor.id)); tab.tabIndex = note.id === state.editor.id ? 0 : -1; tab.disabled = state.busy;
+      const select = target => {
+        if (state.busy) return;
+        if (target.id !== state.editor.id) { saveDraft(); openEditor(target.id, false, false); render(); }
+        $("note-tab-" + (target.id || "new")).focus();
+      };
+      tab.addEventListener("click", () => select(note));
+      tab.addEventListener("keydown", event => {
+        let next; if (event.key === "ArrowRight") next = (index + 1) % items.length; if (event.key === "ArrowLeft") next = (index + items.length - 1) % items.length; if (event.key === "Home") next = 0; if (event.key === "End") next = items.length - 1;
+        if (next !== undefined) { event.preventDefault(); select(items[next]); }
+      });
+      tabs.append(tab);
+    });
+    $("note-editor").setAttribute("aria-labelledby", "note-tab-" + (state.editor.id || "new"));
+    if (state.editor.id) {
       const current = state.records.find(note => note.id === state.editor.id);
-      if (stale(current, state.editor.baseRevision)) conflict(current?.deleted ? "This note was deleted while you were editing. Your draft is still here." : "This note changed while you were editing. Your draft is still here.");
+      if (stale(current, state.editor.baseRevision)) {
+        if (current && !current.deleted && !state.editor.dirty && !state.busy) {
+          openEditor(current.id, true, false);
+        } else conflict(current?.deleted ? "This note was deleted while you were editing. Your draft is still here." : "This note changed while you were editing. Your draft is still here.");
+      }
     }
   }
   function saveDraft() {
     if (!state.editor) return;
     const value = { id: state.editor.id, baseRevision: state.editor.baseRevision, title: $("note-title").value, body: $("note-body").value, notebookId: $("note-book").value };
-    const saved = write(draftKey(state.editor.id), value);
+    state.editor.dirty = value.title !== state.editor.baseline.title || value.body !== state.editor.baseline.body || value.notebookId !== state.editor.baseline.notebookId;
+    const saved = write(state.editor.draftStorageKey, value);
     $("draft-hint").textContent = saved ? (writable() ? "Draft saved on this device. Press Save to finish." : "Offline draft saved on this device. Reconnect to save shared changes.") : "This draft could not be saved on this device. Keep it open or copy its text.";
   }
   function conflict(text) { $("edit-conflict").hidden = false; $("conflict-text").textContent = text; $("save-note").disabled = true; }
-  function openEditor(id = null, skipDraft = false) {
+  function openEditor(id = null, skipDraft = false, focus = true) {
     if (state.locked) return;
     const note = id ? state.records.find(item => item.id === id && !item.deleted) : null;
     if (id && !note) { message("This note was deleted. Refresh your shared space.", true); return; }
-    const stored = skipDraft ? null : read(draftKey(id), null);
+    const storageKey = draftKey(id);
+    let stored = skipDraft ? null : read(storageKey, null);
+    // Older versions kept one new-note draft. Move it into its original book.
+    if (inlineNotes && !id && !stored && !skipDraft) {
+      const legacyKey = "molomon-notes-draft-" + (state.room || "device") + "-new", legacy = read(legacyKey, null);
+      if (legacy && (legacy.notebookId || "default") === state.book && write(storageKey, legacy)) { stored = legacy; remove(legacyKey); }
+    }
     const draft = stored && typeof stored.title === "string" && typeof stored.body === "string" && stored.title.length <= MAX_TITLE && stored.body.length <= MAX_BODY && stored.id === id && Number.isInteger(stored.baseRevision) ? stored : null;
-    state.editor = { id, baseRevision: draft?.baseRevision ?? note?.revision ?? 0 };
+    state.editor = { id, book: state.book, scope: cacheKey(), draftStorageKey: storageKey, baseRevision: draft?.baseRevision ?? note?.revision ?? 0, baseline: { title: note?.title || "", body: note?.body ?? "", notebookId: note ? resolvedBook(note) : state.book } };
+    if (inlineNotes) selectedNotes.set(selectionKey(), id);
     $("editor-title").textContent = draft ? "Your draft" : note ? "Edit note" : "New note";
     $("note-title").value = draft?.title ?? note?.title ?? "";
     $("note-body").value = draft?.body ?? note?.body ?? "";
@@ -145,11 +202,15 @@
     $("delete-note").hidden = !id;
     $("edit-conflict").hidden = true;
     syncStatus(); saveDraft();
+    if (inlineNotes) $("editor-title").textContent = state.editor.dirty ? "Your draft" : note ? "Edit note" : "New note";
     if (id && stale(note, state.editor.baseRevision)) conflict("This note changed since your draft was started. Your draft is still here.");
-    if (!$("note-editor").open) $("note-editor").showModal();
-    $("note-title").focus();
+    if (inlineNotes) {
+      $("note-editor").hidden = false;
+      $("editor-meta").textContent = note ? `${note.authorName || "You"} · ${dateLabel(note.updatedAt)}` : "";
+    } else if (!$("note-editor").open) $("note-editor").showModal();
+    if (focus) $("note-title").focus();
   }
-  function closeEditor() { saveDraft(); $("note-editor").close(); state.editor = null; }
+  function closeEditor() { saveDraft(); if (inlineNotes) $("note-editor").hidden = true; else $("note-editor").close(); state.editor = null; }
   function ask(title, description, action) {
     $("confirm-title").textContent = title; $("confirm-description").textContent = description; $("confirm-action").textContent = action;
     return new Promise(resolve => { const dialog = $("confirm-dialog"); dialog.returnValue = "cancel"; dialog.addEventListener("close", () => resolve(dialog.returnValue === "confirm"), { once: true }); dialog.showModal(); });
@@ -167,25 +228,43 @@
       const record = { id: noteId, ...fields, authorName: fields.authorName || author(), revision: (current?.revision || 0) + 1, deleted, createdAt: current?.createdAt || now, updatedAt: now };
       const next = records.filter(note => note.id !== noteId); next.push(record);
       if (!write(localKey, next)) throw new Error("This browser could not save the note. Export a backup or copy your draft.");
-      state.records = next; render(); return;
+      state.records = next; return record;
     }
-    const { fs, db } = state.firebase, uid = state.uid;
+    const { fs, db } = state.firebase, uid = state.uid, room = state.room, generation = state.authGeneration;
+    let saved;
     await fs.runTransaction(db, async transaction => {
-      const ref = fs.doc(db, "rooms", state.room, "notes", noteId), existing = await transaction.get(ref);
+      const ref = fs.doc(db, "rooms", room, "notes", noteId), existing = await transaction.get(ref);
       const current = existing.exists() ? existing.data() : null;
       if (id && stale(current, baseRevision)) { if (existing.exists()) state.records = [...state.records.filter(note => note.id !== id), serialized(existing)]; const error = new Error("Your partner changed this note. Your draft is still here."); error.code = "note-conflict"; throw error; }
       if (!id && current) throw new Error("This note ID already exists. Try saving again.");
       const record = { ...fields, authorName: fields.authorName || author(), revision: (current?.revision || 0) + 1, deleted, createdBy: current?.createdBy || uid, createdAt: current?.createdAt || fs.serverTimestamp(), updatedBy: uid, updatedAt: fs.serverTimestamp() };
       transaction.set(ref, record);
+      saved = { id: noteId, ...fields, authorName: record.authorName, revision: record.revision, deleted, createdAt: current?.createdAt?.toDate?.().toISOString() || new Date().toISOString(), updatedAt: new Date().toISOString() };
     });
+    if (!state.locked && state.room === room && state.authGeneration === generation) {
+      const latest = state.records.find(note => note.id === noteId);
+      if (!latest || latest.revision < saved.revision) state.records = [...state.records.filter(note => note.id !== noteId), saved];
+    }
+    return saved;
   }
   async function saveEditor(asNew = false) {
     if (!state.editor || state.busy) return;
     try {
-      const fields = { ...content($("note-title").value, $("note-body").value), notebookId: $("note-book").value }, editing = { ...state.editor };
+      const body = $("note-body").value;
+      const fields = { ...content($("note-title").value, body), notebookId: $("note-book").value }, editing = { ...state.editor };
       state.busy = true; syncStatus();
-      await persistNote(asNew ? null : editing.id, fields, asNew ? 0 : editing.baseRevision);
-      remove(draftKey(editing.id)); $("note-editor").close(); state.editor = null; message(asNew ? "Your draft was saved as a separate note." : "Note saved.");
+      const saved = await persistNote(asNew ? null : editing.id, fields, asNew ? 0 : editing.baseRevision);
+      remove(editing.draftStorageKey);
+      if (state.locked || editing.scope !== cacheKey()) return;
+      if (inlineNotes) {
+        state.book = fields.notebookId;
+        selectedNotes.set(selectionKey(), saved.id);
+        state.editor = { id: saved.id, book: state.book, scope: cacheKey(), draftStorageKey: draftKey(saved.id), baseRevision: saved.revision, baseline: { title: fields.title, body: fields.body, notebookId: fields.notebookId }, dirty: false };
+        $("note-title").value = fields.title; $("delete-note").hidden = false; $("edit-conflict").hidden = true;
+        $("editor-title").textContent = "Edit note"; $("editor-meta").textContent = `${saved.authorName} · ${dateLabel(saved.updatedAt)}`;
+        $("draft-hint").textContent = "Saved. Changes here stay in a device draft until you press Save.";
+      } else { $("note-editor").close(); state.editor = null; }
+      message(asNew ? "Your draft was saved as a separate note." : "Note saved.");
     } catch (error) {
       if (error.code === "note-conflict") conflict(error.message);
       else message(friendlyError(error), true);
@@ -336,9 +415,11 @@
     } catch (error) { message(friendlyError(error), true); }
     finally { state.busy = false; $("import-notes").value = ""; render(); }
   }
-  $("new-note").addEventListener("click", () => openEditor());
-  $("close-editor").addEventListener("click", closeEditor); $("cancel-editor").addEventListener("click", closeEditor);
-  $("note-editor").addEventListener("cancel", event => { event.preventDefault(); closeEditor(); });
+  $("new-note").addEventListener("click", () => { saveDraft(); openEditor(); if (inlineNotes) render(); });
+  if (!inlineNotes) {
+    $("close-editor").addEventListener("click", closeEditor); $("cancel-editor").addEventListener("click", closeEditor);
+    $("note-editor").addEventListener("cancel", event => { event.preventDefault(); closeEditor(); });
+  }
   $("note-title").addEventListener("input", saveDraft); $("note-body").addEventListener("input", saveDraft);
   $("note-book").addEventListener("change", saveDraft);
   $("note-form").addEventListener("submit", event => { event.preventDefault(); saveEditor(); });
@@ -349,16 +430,19 @@
     if (!await ask("Load latest note", "Replace your current draft with the latest shared version?", "Load latest")) return;
     const current = state.records.find(note => note.id === id && !note.deleted);
     if (!current) { message("This note was deleted. Save your draft as a new note to keep it.", true); return; }
-    remove(draftKey(id)); openEditor(id, true);
+    remove(state.editor.draftStorageKey); openEditor(id, true);
   });
   $("delete-note").addEventListener("click", async () => {
     const editing = state.editor, current = editing && state.records.find(note => note.id === editing.id);
     if (!editing?.id || !current || state.busy || !writable()) return;
     if (!await ask("Delete note", `Delete “${current.title}”${state.mode === "cloud" ? " for both of you" : " from this device"}?`, "Delete")) return;
-    try { state.busy = true; syncStatus(); await persistNote(editing.id, { title: current.title, body: current.body, notebookId: current.notebookId || "default" }, editing.baseRevision, true); remove(draftKey(editing.id)); $("note-editor").close(); state.editor = null; message("Note deleted."); }
+    try { state.busy = true; syncStatus(); await persistNote(editing.id, { title: current.title, body: current.body, notebookId: current.notebookId || "default" }, editing.baseRevision, true); remove(editing.draftStorageKey); if (inlineNotes) { $("note-editor").hidden = true; selectedNotes.delete(selectionKey()); } else $("note-editor").close(); state.editor = null; message("Note deleted."); }
     catch (error) { if (error.code === "note-conflict") conflict(error.message); else message(friendlyError(error), true); }
     finally { state.busy = false; render(); }
   });
+  $("open-note-settings").addEventListener("click", () => { $("settings-message").hidden = true; $("notes-settings").showModal(); $("close-note-settings").focus(); });
+  for (const id of ["close-note-settings", "done-note-settings"]) $(id).addEventListener("click", () => $("notes-settings").close());
+  $("notes-settings").addEventListener("close", () => $("open-note-settings").focus());
   $("author-name").addEventListener("change", () => { $("author-name").value = author(); write("molomon-notes-author", author()); });
   $("add-book").addEventListener("click", () => openBookEditor()); $("rename-book").addEventListener("click", () => openBookEditor(state.book));
   $("close-book").addEventListener("click", () => { $("book-editor").close(); state.bookEditor = null; });
