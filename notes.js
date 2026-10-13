@@ -4,7 +4,23 @@
 (function (root) {
   "use strict";
   const MAX_TITLE = 160, MAX_BODY = 20000, MAX_IMPORT = 200;
+  // A built-in notebook keeps memories in the existing private note schema.
+  const MEMORY_BOOK = "6d656d6f726965730000000000000000";
   const validId = value => typeof value === "string" && /^[a-f0-9]{32}$/.test(value);
+  function validMemoryDate(value) {
+    if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+    const date = new Date(value + "T12:00:00Z");
+    return Number.isFinite(date.valueOf()) && date.toISOString().slice(0, 10) === value;
+  }
+  function memoryBody(date, body) {
+    if (typeof body !== "string" || (date && !validMemoryDate(date))) throw new Error("Choose a valid memory date.");
+    return date ? `Date: ${date}\n\n${body}` : body;
+  }
+  function readMemory(body) {
+    const match = /^Date: (\d{4}-\d{2}-\d{2})\n\n/.exec(body);
+    return match && validMemoryDate(match[1]) ? { date: match[1], body: body.slice(match[0].length) } : { date: "", body };
+  }
+  function memoryTime(note) { return Date.parse(readMemory(note.body).date || note.createdAt) || 0; }
   function content(title, body) {
     if (typeof title !== "string" || !title.trim() || title.length > MAX_TITLE || typeof body !== "string" || body.length > MAX_BODY) throw new Error("Use a title up to 160 characters and a note up to 20,000 characters.");
     return { title: title.trim(), body };
@@ -26,19 +42,21 @@
       if (!note || typeof note !== "object") throw new Error("A note in this backup is invalid.");
       const fields = content(note.title, note.body);
       if (typeof note.authorName !== "string" || note.authorName.length > 80) throw new Error("A backup author name is invalid.");
-      return { ...fields, authorName: note.authorName || "You", notebookName: books.find(book => book.id === note.notebookId)?.name || "" };
+      return { ...fields, authorName: note.authorName || "You", notebookName: note.notebookId === MEMORY_BOOK ? "Memories" : books.find(book => book.id === note.notebookId)?.name || "", ...(note.notebookId === MEMORY_BOOK ? { memory: true } : {}) };
     });
   }
   function stale(current, baseRevision) { return !current || current.deleted || current.revision !== baseRevision; }
   function exportData(records, books = []) {
+    if (records.some(note => !note.deleted && note.notebookId === MEMORY_BOOK) && !books.some(book => book.id === MEMORY_BOOK)) books = [...books, { id: MEMORY_BOOK, name: "Memories" }];
     return { format: "molomon-notes", version: 1, exportedAt: new Date().toISOString(), books: books.filter(book => !book.deleted).map(book => ({ id: book.id, name: book.name })), notes: records.filter(note => !note.deleted).map(note => ({ title: note.title, body: note.body, authorName: note.authorName, notebookId: note.notebookId || "default", createdAt: note.createdAt, updatedAt: note.updatedAt })) };
   }
-  const core = { content, roomFrom, parseBackup, stale, exportData };
+  const core = { content, roomFrom, parseBackup, stale, exportData, MEMORY_BOOK, validMemoryDate, memoryBody, readMemory, memoryTime };
   root.MolomonNotesCore = core;
   if (typeof module !== "undefined" && module.exports) module.exports = core;
   if (typeof document === "undefined") return;
 
   const $ = id => document.getElementById(id);
+  const memoriesView = document.body.dataset.notesView === "memories";
   const firebaseConfig = root.MOLOMON_CONFIG?.notes?.firebase || {};
   const configured = ["apiKey", "authDomain", "projectId", "appId"].every(key => typeof firebaseConfig[key] === "string" && firebaseConfig[key].trim());
   const state = { mode: "device", room: null, records: [], books: [], book: "default", connected: false, busy: false, unsubscribe: null, unsubscribeBooks: null, editor: null, bookEditor: null, firebase: null, uid: null, locked: configured, authGeneration: 0, observedAuthUid: null };
@@ -48,7 +66,7 @@
   function remove(key) { try { localStorage.removeItem(key); } catch (_) { /* The current visit still works. */ } }
   function cacheKey() { return state.mode === "device" ? localKey : "molomon-notes-space-" + state.room; }
   function booksKey() { return cacheKey() + "-books"; }
-  function draftKey(id) { return "molomon-notes-draft-" + (state.room || "device") + "-" + (id || "new"); }
+  function draftKey(id) { return "molomon-notes-draft-" + (state.room || "device") + "-" + (memoriesView ? "memory-" : "") + (id || "new"); }
   function cachedRecords(key) {
     const records = read(key, []);
     if (!Array.isArray(records)) return [];
@@ -58,11 +76,17 @@
     const books = read(key, []);
     return Array.isArray(books) ? books.filter(book => book && validId(book.id) && typeof book.name === "string" && book.name.length > 0 && book.name.length <= 80 && Number.isInteger(book.revision) && book.revision > 0) : [];
   }
-  function allBooks() { return [{ id: "default", name: "General" }, ...state.books.filter(book => !book.deleted)]; }
+  function allBooks() { return [{ id: "default", name: "General" }, { id: MEMORY_BOOK, name: "Memories" }, ...state.books.filter(book => !book.deleted && book.id !== MEMORY_BOOK)]; }
   function resolvedBook(note) { return allBooks().some(book => book.id === note.notebookId) ? note.notebookId : "default"; }
   function randomId() { return [...crypto.getRandomValues(new Uint8Array(16))].map(n => n.toString(16).padStart(2, "0")).join(""); }
   function node(tag, className, text) { const item = document.createElement(tag); if (className) item.className = className; if (text !== undefined) item.textContent = text; return item; }
-  function message(text, error = false) { $("message").textContent = text || ""; $("message").hidden = !text; $("message").classList.toggle("error", error); }
+  function message(text, error = false) {
+    $("message").textContent = text || ""; $("message").hidden = !text; $("message").classList.toggle("error", error);
+    if (memoriesView) {
+      $("settings-message").textContent = text || ""; $("settings-message").classList.toggle("error", error);
+      $("settings-message").hidden = !text || !$("notes-settings").open;
+    }
+  }
   function author() { return $("author-name").value.trim().slice(0, 80) || "You"; }
   function dateLabel(value) { const date = new Date(value); return Number.isNaN(date.valueOf()) ? "" : new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(date); }
   function writable() { return !state.locked && (state.mode === "device" || (state.connected && navigator.onLine)); }
@@ -79,18 +103,28 @@
     $("import-notes").disabled = state.busy || !writable();
     $("export-notes").disabled = state.busy || state.locked;
     $("add-book").disabled = state.busy || !writable();
-    $("rename-book").disabled = state.busy || !writable() || state.book === "default";
+    $("rename-book").disabled = state.busy || !writable() || state.book === "default" || state.book === MEMORY_BOOK;
     $("save-book").disabled = state.busy || !writable();
     $("delete-book").disabled = state.busy || !writable();
     $("sign-in").hidden = !configured || !state.locked;
     $("sign-in").disabled = state.busy;
     $("sign-out").hidden = !configured || state.locked;
+    if (memoriesView) {
+      if (!state.locked) status.textContent = status.textContent.replace(/notes/g, "memories");
+      $("notes-identity").hidden = state.locked;
+      $("create-space").hidden = state.mode === "cloud";
+      for (const id of ["note-title", "note-body", "note-book", "memory-date"]) $(id).disabled = state.busy || state.locked;
+    }
   }
   function render() {
     syncStatus();
     $("sharing-title").textContent = state.mode === "cloud" ? "Shared space" : "Device notes";
     $("sharing-description").textContent = state.mode === "cloud" ? "Both of you can edit here. Share the invitation privately." : "Saved in this browser. Export a backup to keep a copy.";
-    $("list-heading").textContent = state.mode === "cloud" ? "Shared books" : "Your books";
+    $("list-heading").textContent = memoriesView ? "Moments to keep" : state.mode === "cloud" ? "Shared books" : "Your books";
+    if (memoriesView) {
+      $("sharing-title").textContent = state.mode === "cloud" ? "Shared notes & memories" : "Device notes & memories";
+      $("sharing-description").textContent = state.mode === "cloud" ? "Notes and Memories use this same space. Both of you can edit here. Share the invitation privately." : "Saved in this browser. Use your existing Notes invitation to share memories too. Export a backup to keep a copy.";
+    }
     $("note-list").hidden = state.locked;
     $("use-device").hidden = state.mode !== "cloud";
     $("retry-space").hidden = state.mode !== "cloud" || state.connected;
@@ -98,6 +132,7 @@
     $("setup-help").hidden = configured;
     if (state.room) $("invite-link").value = location.href.split("#")[0] + "#space=" + state.room;
     if (!allBooks().some(book => book.id === state.book)) state.book = "default";
+    if (memoriesView) state.book = MEMORY_BOOK;
     const tabs = $("book-tabs"); tabs.replaceChildren();
     allBooks().forEach((book, index) => {
       const tab = node("button", "book-tab", book.name); tab.type = "button"; tab.id = "book-tab-" + book.id; tab.setAttribute("role", "tab"); tab.setAttribute("aria-controls", "notes-grid"); tab.setAttribute("aria-selected", String(book.id === state.book)); tab.tabIndex = book.id === state.book ? 0 : -1;
@@ -105,12 +140,21 @@
       tab.addEventListener("keydown", event => { const books = allBooks(); let next; if (event.key === "ArrowRight") next = (index + 1) % books.length; if (event.key === "ArrowLeft") next = (index + books.length - 1) % books.length; if (event.key === "Home") next = 0; if (event.key === "End") next = books.length - 1; if (next !== undefined) { event.preventDefault(); state.book = books[next].id; render(); $("book-tab-" + state.book).focus(); } });
       tabs.append(tab);
     });
-    $("notes-grid").setAttribute("aria-labelledby", "book-tab-" + state.book);
-    const notes = state.records.filter(note => !note.deleted && resolvedBook(note) === state.book).sort((a, b) => (Date.parse(b.updatedAt) || 0) - (Date.parse(a.updatedAt) || 0));
-    $("note-count").textContent = `${notes.length} ${notes.length === 1 ? "note" : "notes"}`;
+    $("notes-grid").setAttribute("aria-labelledby", memoriesView ? "list-heading" : "book-tab-" + state.book);
+    const notes = state.records.filter(note => !note.deleted && resolvedBook(note) === state.book).sort((a, b) => memoriesView ? memoryTime(b) - memoryTime(a) || (Date.parse(b.createdAt) || 0) - (Date.parse(a.createdAt) || 0) : (Date.parse(b.updatedAt) || 0) - (Date.parse(a.updatedAt) || 0));
+    $("note-count").textContent = `${notes.length} ${memoriesView ? notes.length === 1 ? "memory" : "memories" : notes.length === 1 ? "note" : "notes"}`;
     const grid = $("notes-grid"); grid.replaceChildren();
-    if (!notes.length) grid.append(node("p", "notes-empty", "No notes yet. Add a note, a plan, or a list."));
+    if (!notes.length) grid.append(node("p", "notes-empty", memoriesView ? "No memories yet. Add a note about a movie night, a visit, or something you did together." : "No notes yet. Add a note, a plan, or a list."));
     for (const note of notes) {
+      if (memoriesView) {
+        const memory = readMemory(note.body), card = node("article", "note-card memory-card"); card.setAttribute("role", "listitem");
+        const date = memory.date ? node("time", "memory-date", new Intl.DateTimeFormat(undefined, { month: "long", day: "numeric", year: "numeric" }).format(new Date(memory.date + "T12:00:00"))) : node("p", "memory-date", "A moment to remember");
+        if (memory.date) date.dateTime = memory.date;
+        const preview = memory.body.length > 500 ? memory.body.slice(0, 500) + "…" : memory.body;
+        card.append(date, node("h3", "", note.title), node("p", "memory-preview", preview), node("p", "note-meta", `Kept by ${note.authorName || "You"}`));
+        const edit = node("button", "notes-button", "Read & edit"); edit.type = "button"; edit.setAttribute("aria-label", `Read and edit memory ${note.title}`); edit.addEventListener("click", () => openEditor(note.id)); card.append(edit); grid.append(card);
+        continue;
+      }
       const card = node("article", "note-card"), list = node("ul", "note-preview");
       const lines = note.body.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
       lines.slice(0, 7).forEach(line => list.append(node("li", "", line.length > 180 ? line.slice(0, 180) + "…" : line)));
@@ -126,6 +170,7 @@
   function saveDraft() {
     if (!state.editor) return;
     const value = { id: state.editor.id, baseRevision: state.editor.baseRevision, title: $("note-title").value, body: $("note-body").value, notebookId: $("note-book").value };
+    if (memoriesView) value.memoryDate = $("memory-date").value;
     const saved = write(draftKey(state.editor.id), value);
     $("draft-hint").textContent = saved ? (writable() ? "Draft saved on this device. Press Save to finish." : "Offline draft saved on this device. Reconnect to save shared changes.") : "This draft could not be saved on this device. Keep it open or copy its text.";
   }
@@ -137,11 +182,17 @@
     const stored = skipDraft ? null : read(draftKey(id), null);
     const draft = stored && typeof stored.title === "string" && typeof stored.body === "string" && stored.title.length <= MAX_TITLE && stored.body.length <= MAX_BODY && stored.id === id && Number.isInteger(stored.baseRevision) ? stored : null;
     state.editor = { id, baseRevision: draft?.baseRevision ?? note?.revision ?? 0 };
-    $("editor-title").textContent = draft ? "Your draft" : note ? "Edit note" : "New note";
+    const memory = memoriesView && note ? readMemory(note.body) : null;
+    $("editor-title").textContent = draft ? "Your draft" : note ? memoriesView ? "Edit memory" : "Edit note" : memoriesView ? "Add memory" : "New note";
     $("note-title").value = draft?.title ?? note?.title ?? "";
-    $("note-body").value = draft?.body ?? note?.body ?? "";
+    $("note-body").value = draft?.body ?? memory?.body ?? note?.body ?? "";
+    if (memoriesView) {
+      const today = new Date(), localDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+      $("memory-date").value = draft ? (validMemoryDate(draft.memoryDate) ? draft.memoryDate : "") : note ? memory.date : localDate;
+    }
     $("note-book").replaceChildren(); allBooks().forEach(book => { const option = node("option", "", book.name); option.value = book.id; $("note-book").append(option); });
     const bookId = draft?.notebookId || note?.notebookId || state.book; $("note-book").value = allBooks().some(book => book.id === bookId) ? bookId : "default";
+    if (memoriesView) $("note-book").value = MEMORY_BOOK;
     $("delete-note").hidden = !id;
     $("edit-conflict").hidden = true;
     syncStatus(); saveDraft();
@@ -149,7 +200,7 @@
     if (!$("note-editor").open) $("note-editor").showModal();
     $("note-title").focus();
   }
-  function closeEditor() { saveDraft(); $("note-editor").close(); state.editor = null; }
+  function closeEditor() { saveDraft(); $("note-editor").close(); state.editor = null; if (memoriesView) $("new-note").focus(); }
   function ask(title, description, action) {
     $("confirm-title").textContent = title; $("confirm-description").textContent = description; $("confirm-action").textContent = action;
     return new Promise(resolve => { const dialog = $("confirm-dialog"); dialog.returnValue = "cancel"; dialog.addEventListener("close", () => resolve(dialog.returnValue === "confirm"), { once: true }); dialog.showModal(); });
@@ -182,15 +233,16 @@
   async function saveEditor(asNew = false) {
     if (!state.editor || state.busy) return;
     try {
-      const fields = { ...content($("note-title").value, $("note-body").value), notebookId: $("note-book").value }, editing = { ...state.editor };
+      const body = memoriesView ? memoryBody($("memory-date").value, $("note-body").value) : $("note-body").value;
+      const fields = { ...content($("note-title").value, body), notebookId: memoriesView ? MEMORY_BOOK : $("note-book").value }, editing = { ...state.editor };
       state.busy = true; syncStatus();
       await persistNote(asNew ? null : editing.id, fields, asNew ? 0 : editing.baseRevision);
-      remove(draftKey(editing.id)); $("note-editor").close(); state.editor = null; message(asNew ? "Your draft was saved as a separate note." : "Note saved.");
+      remove(draftKey(editing.id)); $("note-editor").close(); state.editor = null; message(asNew ? `Your draft was saved as a separate ${memoriesView ? "memory" : "note"}.` : memoriesView ? "Memory saved." : "Note saved.");
     } catch (error) {
       if (error.code === "note-conflict") conflict(error.message);
       else message(friendlyError(error), true);
       saveDraft();
-    } finally { state.busy = false; render(); if (!$("edit-conflict").hidden) $("save-note").disabled = true; }
+    } finally { state.busy = false; render(); if (!$("edit-conflict").hidden) $("save-note").disabled = true; if (memoriesView && !state.editor) $("new-note").focus(); }
   }
   function friendlyError(error) {
     const code = error?.code || "";
@@ -324,10 +376,10 @@
       state.busy = true; syncStatus();
       let added = 0;
       try {
-        const bookMap = new Map(allBooks().map(book => [book.name, book.id]));
+        const bookMap = new Map(allBooks().filter(book => book.id !== MEMORY_BOOK).map(book => [book.name, book.id]));
         for (const note of notes) {
-          let notebookId = "default";
-          if (note.notebookName) { if (!bookMap.has(note.notebookName)) bookMap.set(note.notebookName, await persistBook(null, note.notebookName, 0)); notebookId = bookMap.get(note.notebookName); }
+          let notebookId = note.memory ? MEMORY_BOOK : "default";
+          if (!note.memory && note.notebookName) { if (!bookMap.has(note.notebookName)) bookMap.set(note.notebookName, await persistBook(null, note.notebookName, 0)); notebookId = bookMap.get(note.notebookName); }
           await persistNote(null, { title: note.title, body: note.body, authorName: note.authorName, notebookId }, 0); added++;
         }
         message(`Imported ${added} ${added === 1 ? "note" : "notes"}.`);
@@ -340,6 +392,7 @@
   $("close-editor").addEventListener("click", closeEditor); $("cancel-editor").addEventListener("click", closeEditor);
   $("note-editor").addEventListener("cancel", event => { event.preventDefault(); closeEditor(); });
   $("note-title").addEventListener("input", saveDraft); $("note-body").addEventListener("input", saveDraft);
+  if (memoriesView) $("memory-date").addEventListener("input", saveDraft);
   $("note-book").addEventListener("change", saveDraft);
   $("note-form").addEventListener("submit", event => { event.preventDefault(); saveEditor(); });
   $("save-separate").addEventListener("click", () => saveEditor(true));
@@ -354,11 +407,16 @@
   $("delete-note").addEventListener("click", async () => {
     const editing = state.editor, current = editing && state.records.find(note => note.id === editing.id);
     if (!editing?.id || !current || state.busy || !writable()) return;
-    if (!await ask("Delete note", `Delete “${current.title}”${state.mode === "cloud" ? " for both of you" : " from this device"}?`, "Delete")) return;
-    try { state.busy = true; syncStatus(); await persistNote(editing.id, { title: current.title, body: current.body, notebookId: current.notebookId || "default" }, editing.baseRevision, true); remove(draftKey(editing.id)); $("note-editor").close(); state.editor = null; message("Note deleted."); }
+    if (!await ask(memoriesView ? "Delete memory" : "Delete note", `Delete “${current.title}”${state.mode === "cloud" ? " for both of you" : " from this device"}?`, "Delete")) return;
+    try { state.busy = true; syncStatus(); await persistNote(editing.id, { title: current.title, body: current.body, notebookId: current.notebookId || "default" }, editing.baseRevision, true); remove(draftKey(editing.id)); $("note-editor").close(); state.editor = null; message(memoriesView ? "Memory deleted." : "Note deleted."); }
     catch (error) { if (error.code === "note-conflict") conflict(error.message); else message(friendlyError(error), true); }
-    finally { state.busy = false; render(); }
+    finally { state.busy = false; render(); if (memoriesView && !state.editor) $("new-note").focus(); }
   });
+  if (memoriesView) {
+    $("open-note-settings").addEventListener("click", () => { $("settings-message").hidden = true; $("notes-settings").showModal(); $("close-note-settings").focus(); });
+    for (const id of ["close-note-settings", "done-note-settings"]) $(id).addEventListener("click", () => $("notes-settings").close());
+    $("notes-settings").addEventListener("close", () => $("open-note-settings").focus());
+  }
   $("author-name").addEventListener("change", () => { $("author-name").value = author(); write("molomon-notes-author", author()); });
   $("add-book").addEventListener("click", () => openBookEditor()); $("rename-book").addEventListener("click", () => openBookEditor(state.book));
   $("close-book").addEventListener("click", () => { $("book-editor").close(); state.bookEditor = null; });

@@ -1,7 +1,7 @@
 "use strict";
 
 const assert = require("node:assert/strict");
-const { content, roomFrom, parseBackup, stale, exportData } = require("../notes.js");
+const { content, roomFrom, parseBackup, stale, exportData, MEMORY_BOOK, validMemoryDate, memoryBody, readMemory, memoryTime } = require("../notes.js");
 let passed = 0;
 function test(name, run) { run(); passed++; console.log(`✓ ${name}`); }
 const bookId = "a".repeat(32);
@@ -82,6 +82,39 @@ test("Space invitations accept complete random IDs and reject incomplete/non-spa
   assert.equal(roomFrom("a".repeat(31)), null);
   assert.equal(roomFrom("javascript:alert(1)"), null);
   assert.equal(roomFrom(""), null);
+});
+
+test("Memory dates and prose survive a combined backup without a cloud schema change", () => {
+  assert.match(MEMORY_BOOK, /^[a-f0-9]{32}$/);
+  const original = note({ title: "A past moment", body: memoryBody("2020-02-29", "A little note\n<script>plain text</script> 🐱"), notebookId: MEMORY_BOOK });
+  const exported = exportData([original, note({ title: "Ordinary note" })]);
+  assert.deepEqual(exported.books, [{ id: MEMORY_BOOK, name: "Memories" }]);
+  const restored = parseBackup(JSON.stringify(exported));
+  assert.equal(restored[0].notebookName, "Memories");
+  assert.deepEqual(readMemory(restored[0].body), { date: "2020-02-29", body: "A little note\n<script>plain text</script> 🐱" });
+  assert.equal(restored[1].notebookName, "");
+  assert.equal(exported.notes[0].memoryDate, undefined);
+  const collision = parseBackup(JSON.stringify(exportData([original, note({ notebookId: bookId })], [{ id: bookId, name: "Memories" }])));
+  assert.equal(collision[0].memory, true);
+  assert.equal(collision[1].memory, undefined);
+});
+
+test("Memory dates reject impossible days and leave undated or legacy text intact", () => {
+  for (const date of ["2023-02-29", "2026-02-30", "2026-13-01", "10/12/2026"]) {
+    assert.equal(validMemoryDate(date), false);
+    assert.throws(() => memoryBody(date, "Moment"));
+  }
+  assert.equal(validMemoryDate("2024-02-29"), true);
+  assert.deepEqual(readMemory(memoryBody("", "No exact date\nTwo lines")), { date: "", body: "No exact date\nTwo lines" });
+  assert.deepEqual(readMemory("Date: 2026-02-30\n\nText"), { date: "", body: "Date: 2026-02-30\n\nText" });
+  assert.throws(() => content("Moment", memoryBody("2026-10-12", "x".repeat(20000))));
+});
+
+test("Editing an old memory does not move it ahead of a more recent moment", () => {
+  const old = note({ body: memoryBody("2019-06-12", "Then"), createdAt: "2026-10-12T12:00:00Z", updatedAt: "2026-10-13T12:00:00Z" });
+  const recent = note({ body: memoryBody("2025-06-12", "Later"), createdAt: "2026-10-11T12:00:00Z" });
+  assert.ok(memoryTime(old) < memoryTime(recent));
+  assert.equal(memoryTime(note({ body: "Undated", createdAt: "2020-01-01T12:00:00Z" })), Date.parse("2020-01-01T12:00:00Z"));
 });
 
 console.log(`\n${passed} focused Notes tests passed.`);
