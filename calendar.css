@@ -71,11 +71,19 @@ body { background: #fff; }
 .time-gutter { height: 1152px; background: #fff; position: sticky; left: 0; z-index: 2; }
 .time-label { height: 48px; text-align: right; padding: 3px 7px 0 0; font-size: 9px; color: #75838a; }
 .week-day-column { height: 1152px; border-left: 1px solid var(--border); position: relative; background: repeating-linear-gradient(to bottom, transparent 0px, transparent 47px, #e5eaed 47px, #e5eaed 48px); }
-.calendar-busy { position: absolute; width: calc(50% - 5px); left: 3px; z-index: 1; border-radius: 4px; border-left: 3px solid #16796e; background: #dcefe9; color: #165c52; font-size: 9px; line-height: 1.5; padding: 3px 4px; overflow: hidden; min-height: 20px; }
+.calendar-busy { position: absolute; width: calc(50% - 5px); left: 3px; z-index: 1; border: 0; border-radius: 4px; border-left: 3px solid #16796e; background: #dcefe9; color: #165c52; font: inherit; font-size: 9px; line-height: 1.5; text-align: left; padding: 3px 4px; overflow: hidden; min-height: 20px; cursor: pointer; }
 .calendar-busy.second { left: calc(50% + 2px); background: #f8e3d8; color: #80472c; border-color: #b85b37; }
-.calendar-busy strong { display: block; font-size: 10px; font-weight: 500; overflow-wrap: anywhere; }
+.calendar-busy.free-event { background: #fff; border: 1px dashed #16796e; }
+.calendar-busy.second.free-event { border-color: #b85b37; }
+.calendar-busy strong { display: block; font-size: 10px; font-weight: 500; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .block-time { display: block; white-space: nowrap; }
 .calendar-busy:focus-visible { outline: 2px solid #185e95; outline-offset: 2px; }
+.calendar-event-dialog { width: min(440px, calc(100% - 32px)); max-height: calc(100dvh - 40px); overflow: auto; padding: 24px; border: 1px solid var(--border); border-radius: 12px; background: #fff; color: var(--text); }
+.calendar-event-dialog::backdrop { background: #153c3455; }
+.calendar-event-dialog h2 { font-size: 21px; line-height: 1.4; overflow-wrap: anywhere; margin: 8px 0 16px; }
+.calendar-event-dialog p { font-size: 13px; line-height: 1.7; overflow-wrap: anywhere; margin: 8px 0; }
+.calendar-event-dialog .eyebrow { color: var(--seafoam); }
+.calendar-event-dialog .calendar-button { margin-top: 16px; min-height: 44px; }
 .day-note { position: absolute; top: 437px; left: 7px; right: 7px; padding: 7px 5px; background: #f2f5f7; border-radius: 4px; color: #68777e; font-size: 10px; line-height: 1.7; overflow-wrap: anywhere; }
 .day-note.second { top: 505px; }
 .free-slots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }

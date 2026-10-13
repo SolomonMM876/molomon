@@ -215,6 +215,39 @@
     return merge(result, range);
   }
 
+  function googleEvents(value, calendarName, range) {
+    if (!Array.isArray(value.items)) throw new Error("Google returned an invalid event list.");
+    if (value.accessRole === "freeBusyReader" || value.accessRole === "none") return [];
+    const zone = value.timeZone || "UTC", events = [];
+    const privateAccess = ["owner", "writer"].includes(value.accessRole);
+    for (const item of value.items) {
+      if (item.status === "cancelled") continue;
+      const allDay = !!item.start?.date;
+      const start = allDay ? boundary(item.start.date, "00:00", zone) : Date.parse(item.start?.dateTime);
+      const end = allDay ? boundary(item.end?.date, "00:00", zone, true) : Date.parse(item.end?.dateTime);
+      if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) throw new Error("Google returned an invalid event time.");
+      if (end <= range.start || start >= range.end) continue;
+      const hidden = !privateAccess && ["private", "confidential"].includes(item.visibility);
+      events.push({ start, end, title: hidden ? "Private event" : String(item.summary || "Untitled event").slice(0, 1000), calendar: calendarName, allDay, free: item.transparency === "transparent" });
+    }
+    return events;
+  }
+  function calendarBlocks(busy, events, range) {
+    const blocks = events.filter(event => event.end > range.start && event.start < range.end).map(event => ({ ...event, from: Math.max(event.start, range.start), to: Math.min(event.end, range.end) }));
+    const uncovered = subtract(merge(busy, range), merge(events.filter(event => !event.free).map(event => [event.start, event.end]), range));
+    for (const [from, to] of uncovered) blocks.push({ from, to, start: from, end: to, title: "Busy", calendar: "", free: false });
+    blocks.sort((a, b) => a.from - b.from || b.to - a.to);
+    let group = [], groupEnd = -Infinity, lanes = [];
+    const finish = () => { for (const block of group) block.columns = lanes.length; };
+    for (const block of blocks) {
+      if (block.from >= groupEnd) { finish(); group = []; lanes = []; groupEnd = -Infinity; }
+      let lane = lanes.findIndex(end => end <= block.from);
+      if (lane < 0) lane = lanes.length;
+      lanes[lane] = block.to; block.lane = lane; group.push(block); groupEnd = Math.max(groupEnd, block.to);
+    }
+    finish(); return blocks;
+  }
+
   function encodeSnapshot(snapshot) {
     const bytes = new TextEncoder().encode(JSON.stringify(snapshot));
     let binary = "";
@@ -234,12 +267,14 @@
     for (const interval of value.busy) if (!Array.isArray(interval) || interval.length !== 2 || !interval.every(Number.isFinite) || interval[1] <= interval[0] || interval[0] < expected.start || interval[1] > expected.end) throw new Error("The availability code contains invalid busy intervals.");
     return { v: 1, name: value.name, zone: value.zone, week: value.week, updatedAt: value.updatedAt, range: value.range, busy: merge(value.busy, expected) };
   }
-  globalThis.MolomonCalendarCore = { validZone, parts, zonedTime, boundary, localDate, addDays, monday, weekRange, queryRange, merge, subtract, intersect, availableWindows, freeWindows, calendarBusy, encodeSnapshot, decodeSnapshot };
+  globalThis.MolomonCalendarCore = { validZone, parts, zonedTime, boundary, localDate, addDays, monday, weekRange, queryRange, merge, subtract, intersect, availableWindows, freeWindows, calendarBusy, googleEvents, calendarBlocks, encodeSnapshot, decodeSnapshot };
   if (typeof document === "undefined") return;
 
   const config = globalThis.MOLOMON_CONFIG || {};
   const googleClientId = config.calendar && config.calendar.googleClientId || "";
-  const SCOPES = ["https://www.googleapis.com/auth/calendar.events.freebusy", "https://www.googleapis.com/auth/calendar.calendarlist.readonly"];
+  const BUSY_SCOPES = ["https://www.googleapis.com/auth/calendar.events.freebusy", "https://www.googleapis.com/auth/calendar.calendarlist.readonly"];
+  const EVENT_SCOPE = "https://www.googleapis.com/auth/calendar.events.readonly";
+  const SCOPES = [...BUSY_SCOPES, EVENT_SCOPE];
   const deviceZone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
   const $ = selector => document.querySelector(selector);
   const state = { week: monday(localDate(Date.now(), deviceZone)), viewZone: deviceZone, duration: 30, people: [], sources: [null, null], tokens: [null, null], busy: [[], []], loaded: [false, false], requests: [null, null], revisions: [0, 0], calendarLists: [null, null] };
@@ -341,6 +376,23 @@
   function formatTime(timestamp, zone) { return new Intl.DateTimeFormat("en", { timeZone: zone, hour: "numeric", minute: "2-digit" }).format(new Date(timestamp)); }
   function formatFull(timestamp, zone) { return new Intl.DateTimeFormat("en", { timeZone: zone, weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(timestamp)); }
   function windowText(start, end, zone) { return `${formatFull(start, zone)} – ${localDate(start, zone) === localDate(end, zone) ? formatTime(end, zone) : formatFull(end, zone)}`; }
+  let activeEventKey = null;
+  function showEvent(index, event) {
+    activeEventKey = JSON.stringify([index, event.start, event.end, event.title]);
+    $("#event-title").textContent = event.title;
+    $("#event-person").textContent = state.people[index].name;
+    $("#event-time").textContent = `${windowText(event.start, event.end, state.viewZone)} · ${state.viewZone}${event.allDay ? " · All day" : ""}`;
+    $("#event-local-time").textContent = state.people[index].zone === state.viewZone ? "" : `${windowText(event.start, event.end, state.people[index].zone)} · ${state.people[index].zone}`;
+    $("#event-calendar").textContent = event.calendar;
+    $("#event-availability").textContent = event.free ? "Marked free · available for plans." : "Busy · included when finding free time.";
+    $("#calendar-event").showModal();
+  }
+  $("#close-event").addEventListener("click", () => $("#calendar-event").close());
+  $("#calendar-event").addEventListener("close", () => {
+    for (const id of ["event-title", "event-person", "event-time", "event-local-time", "event-calendar", "event-availability"]) $(`#${id}`).textContent = "";
+    const trigger = [...document.querySelectorAll(".calendar-busy")].find(block => block.dataset.eventKey === activeEventKey);
+    activeEventKey = null; trigger?.focus({ preventScroll: true });
+  });
   function sourceData(index, range) {
     const source = state.sources[index];
     if (!source) return { loaded: false, busy: [] };
@@ -360,6 +412,7 @@
       if (source) {
         const label = source.kind === "ics" ? `${source.files.length} .ics file${source.files.length === 1 ? "" : "s"}` : source.kind === "google" ? "Google calendars" : "Shared snapshot";
         message = `${label} · ${source.kind === "ics" ? "Imported" : "Updated"} ${formatFull(Date.parse(source.updatedAt), state.viewZone)}. ${source.liveError ? source.liveError : data.error ? `Cannot read this week: ${data.error}` : data.loaded ? `Loaded for week of ${state.week}.${source.kind === "google" ? " Updates each minute while this tab is visible." : ""}` : `Not loaded for this week. ${source.kind === "google" ? "Refresh Google." : "Ask for a new share code."}`}`;
+        if (source.kind === "google" && data.loaded && source.detailsMessage) message += ` ${source.detailsMessage}`;
       }
       if (!googleClientId) message += " Google sign-in needs setup; file import works now.";
       $(`#source-${index}`).textContent = message;
@@ -389,22 +442,28 @@
       heading.setAttribute("aria-label", new Intl.DateTimeFormat("en", { timeZone: "UTC", weekday: "long", month: "long", day: "numeric" }).format(reference)); head.append(heading);
       const column = element("div", "week-day-column"); column.setAttribute("role", "group"); column.setAttribute("aria-label", heading.getAttribute("aria-label"));
       for (let index = 0; index < 2; index++) {
-        const blocks = merge(state.busy[index], { start, end });
+        const source = state.sources[index];
+        const events = source?.kind === "google" && source.coverage?.start <= start && source.coverage?.end >= end ? source.events || [] : [];
+        const blocks = calendarBlocks(state.busy[index], events, { start, end });
         if (!state.loaded[index] || !blocks.length) column.append(element("div", `day-note${index ? " second" : ""}`, `${state.people[index].name}: ${state.loaded[index] ? "No busy events" : "Not loaded"}`));
-        for (const [from, to] of blocks) {
+        for (const event of blocks) {
+          const { from, to } = event;
           const fromParts = parts(from, state.viewZone), toParts = parts(to, state.viewZone);
           const fromMinute = from === start ? 0 : fromParts.hour * 60 + fromParts.minute + fromParts.second / 60;
           let toMinute = to === end ? 1440 : toParts.hour * 60 + toParts.minute + toParts.second / 60;
           // Fall-back folds can run backwards on a wall-clock grid. Keep the
           // block visible with actual duration; its label retains exact times.
           if (toMinute <= fromMinute) toMinute = Math.min(1440, fromMinute + (to - from) / MINUTE);
-          const block = element("div", `calendar-busy${index ? " second" : ""}`);
+          const block = element("button", `calendar-busy${index ? " second" : ""}${event.free ? " free-event" : ""}`); block.type = "button";
+          block.dataset.eventKey = JSON.stringify([index, event.start, event.end, event.title]);
+          block.style.left = `calc(${index * 50 + event.lane * 50 / event.columns}% + 3px)`;
+          block.style.width = `calc(${50 / event.columns}% - 5px)`;
           block.style.top = `${fromMinute * .8}px`; block.style.height = `${Math.max(20, (toMinute - fromMinute) * .8)}px`;
           const gridTime = value => new Intl.DateTimeFormat("en-GB", { timeZone: state.viewZone, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(value));
-          block.append(element("strong", "", "Busy"), element("span", "block-time", gridTime(from)), element("span", "block-time", `– ${to === end ? "24:00" : gridTime(to)}`));
-          block.title = `${state.people[index].name}: ${windowText(from, to, state.people[index].zone)} · ${state.people[index].zone}`;
-          block.setAttribute("aria-label", `${state.people[index].name}: busy, ${windowText(from, to, state.viewZone)} in ${state.viewZone}. ${windowText(from, to, state.people[index].zone)} in ${state.people[index].zone}.`);
-          block.tabIndex = 0; column.append(block);
+          block.append(element("strong", "", event.title), element("span", "block-time", gridTime(from)), element("span", "block-time", `– ${to === end ? "24:00" : gridTime(to)}`));
+          block.title = `${state.people[index].name}: ${event.title} · ${windowText(event.start, event.end, state.people[index].zone)} · ${state.people[index].zone}`;
+          block.setAttribute("aria-label", `${state.people[index].name}: ${event.title}, ${event.free ? "free" : "busy"}, ${windowText(event.start, event.end, state.viewZone)} in ${state.viewZone}. View event.`);
+          block.setAttribute("aria-haspopup", "dialog"); block.addEventListener("click", () => showEvent(index, event)); column.append(block);
         }
       }
       body.append(column);
@@ -476,6 +535,7 @@
   // Preload only configured integrations so the eventual token popup can be
   // opened synchronously by the user's click, as required by popup blockers.
   function invalidateRequest(index) {
+    if ($("#calendar-event").open) $("#calendar-event").close();
     state.revisions[index]++;
     if (state.requests[index]) state.requests[index].controller.abort();
     state.requests[index] = null;
@@ -539,8 +599,8 @@
     const client = api.initTokenClient({ client_id: googleClientId, scope: SCOPES.join(" "), include_granted_scopes: false,
       callback: async response => {
         if (revision !== state.revisions[index]) return;
-        if (response.error || !response.access_token || !api.hasGrantedAllScopes(response, ...SCOPES)) { status("Google calendar permissions were not granted. File import still works.", true); return; }
-        const token = { value: response.access_token, expires: Date.now() + Number(response.expires_in || 3600) * 1000 };
+        if (response.error || !response.access_token || !api.hasGrantedAllScopes(response, ...BUSY_SCOPES)) { status("Google calendar permissions were not granted. File import still works.", true); return; }
+        const token = { value: response.access_token, expires: Date.now() + Number(response.expires_in || 3600) * 1000, eventDetails: api.hasGrantedAllScopes(response, EVENT_SCOPE) };
         state.tokens[index] = token;
         try { await loadCalendarList(index, token, revision); }
         catch (error) { status(error.message, true); }
@@ -553,6 +613,42 @@
   async function refreshGoogle(index) {
     if (!state.tokens[index] || state.tokens[index].expires <= Date.now() + 30000) { connectGoogle(index); return; }
     await fetchGoogleBusy(index, true);
+  }
+  async function loadGoogleEvents(index, ids, token, range, signal) {
+    if (!token.eventDetails) return { events: [], detailsMessage: "Sign in again and allow event details to see names." };
+    const results = new Array(ids.length); let next = 0;
+    await Promise.all(Array.from({ length: Math.min(4, ids.length) }, async () => {
+      while (next < ids.length) {
+        const position = next++, id = ids[position], events = []; let restricted = false;
+        try {
+          let pageToken = "";
+          for (let page = 0; page < 20; page++) {
+            const parameters = new URLSearchParams({ timeMin: new Date(range.start).toISOString(), timeMax: new Date(range.end).toISOString(), singleEvents: "true", orderBy: "startTime", maxResults: "250", fields: "timeZone,accessRole,nextPageToken,items(summary,status,visibility,start,end,transparency)" });
+            if (pageToken) parameters.set("pageToken", pageToken);
+            const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(id)}/events?${parameters}`, { signal, headers: { Authorization: `Bearer ${token.value}` } });
+            if (response.status === 401) { const error = new Error("Google sign-in expired. Sign in again to resume live updates."); error.code = "calendar-auth-expired"; throw error; }
+            if (!response.ok) { const error = new Error("Event names could not load."); error.restricted = response.status === 403 || response.status === 404; throw error; }
+            const value = await response.json();
+            restricted ||= ["freeBusyReader", "none"].includes(value.accessRole);
+            const name = state.calendarLists[index]?.find(calendar => calendar.id === id || (id === "primary" && calendar.primary))?.name || "Google calendar";
+            events.push(...googleEvents(value, name, range));
+            pageToken = value.nextPageToken || "";
+            if (!pageToken) break;
+            if (page === 19) throw new Error("This calendar has too many events to display.");
+          }
+          results[position] = { events, restricted };
+        } catch (error) {
+          if (error.name === "AbortError" || error.code === "calendar-auth-expired") throw error;
+          results[position] = { events: [], restricted: !!error.restricted, failed: !error.restricted };
+        }
+      }
+    }));
+    const events = results.flatMap(result => result.events);
+    if (events.length > 10000) return { events: [], detailsMessage: "Too many event names to display. Select fewer calendars; busy times are still loaded." };
+    const messages = [];
+    if (results.some(result => result.restricted)) messages.push("Some calendars share busy time only. Choose See all event details in Google Calendar to show names.");
+    if (results.some(result => result.failed)) messages.push("Some event names could not refresh. Busy times are still loaded; try Refresh Google.");
+    return { events, detailsMessage: messages.join(" ") };
   }
   async function fetchGoogleBusy(index, quiet = false) {
     const token = state.tokens[index]; if (!token) return;
@@ -590,10 +686,13 @@
           }
         }
         if (!current()) return;
-        state.sources[index] = { kind: "google", busy: merge(intervals, range), coverage: range, updatedAt: new Date().toISOString(), stale: false };
-        if (!quiet) status(`Google busy time loaded for ${requestedWeek}. It updates each minute while this tab is visible.`);
+        const details = await loadGoogleEvents(index, ids, token, range, record.controller.signal);
+        if (!current()) return;
+        state.sources[index] = { kind: "google", busy: merge(intervals, range), ...details, coverage: range, updatedAt: new Date().toISOString(), stale: false };
+        if (!quiet) status(`Google calendars loaded for ${requestedWeek}. They update each minute while this tab is visible.`);
       } catch (error) {
         if (error.name === "AbortError" || !current()) return;
+        if (error.code === "calendar-auth-expired") { expireToken(token); status(error.message, true); return; }
         if (state.sources[index]?.kind === "google") { state.sources[index].stale = true; state.sources[index].liveError = "Live update failed. Previous busy blocks are a snapshot; retry or check calendar access."; }
         status(error.message, true);
       } finally {
@@ -604,7 +703,7 @@
   }
   function refreshGoogleSources(force = false) {
     if (document.hidden) return;
-    for (let index = 0; index < 2; index++) if (state.sources[index]?.kind === "google" && state.tokens[index]) {
+    for (let index = 0; index < 2; index++) if (state.tokens[index] && (state.sources[index]?.kind === "google" || (force && !state.sources[index]))) {
       if (force || Date.now() - Date.parse(state.sources[index].updatedAt) >= 45000 || state.sources[index].stale) fetchGoogleBusy(index, true);
     }
   }
