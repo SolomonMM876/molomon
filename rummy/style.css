@@ -56,7 +56,7 @@ h2, h3 { margin: 0; }
 .btn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.18); }
 .btn:active:not(:disabled) { transform: translateY(1px); }
 .btn:disabled { opacity: 0.42; cursor: not-allowed; }
-.btn:focus-visible, .link:focus-visible, .card:focus-visible, .meld:focus-visible, .stock:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.btn:focus-visible, .link:focus-visible, .home-link:focus-visible, .card:focus-visible, .meld:focus-visible, .stock:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .btn.primary { background: var(--gold); color: var(--gold-ink); border-color: transparent; }
 .btn.primary:hover:not(:disabled) { background: #ffd36e; }
 .btn.ghost { background: transparent; border-color: transparent; }
@@ -84,6 +84,8 @@ input.num { width: 110px; }
 .brand-suits i { font-style: normal; }
 .brand-suits .r { color: #ff6b6b; }
 .brand-suits .b { color: var(--ink); }
+.home-link { display: inline-block; margin-bottom: 16px; color: var(--ink-3); font-size: 13px; text-decoration: none; }
+.home-link:hover { color: var(--ink); }
 
 /* ---------- start, join and lobby screens ---------- */
 .center { min-height: 100vh; display: grid; place-items: center; padding: 28px 16px; }

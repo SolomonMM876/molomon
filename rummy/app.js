@@ -678,6 +678,11 @@
         h('i', { class: 'b' }, '♠'), h('i', { class: 'r' }, '♥'), h('i', { class: 'b' }, '♣'), h('i', { class: 'r' }, '♦')));
   }
 
+  // Back to the Molomon site this game lives in. In a game, Leave returns to the start page first.
+  function homeLink() {
+    return h('a', { class: 'home-link', href: '../index.html' }, '← Molomon');
+  }
+
   function nameInput(onEnter) {
     const input = h('input', { type: 'text', placeholder: 'Your name', value: store.get('r500:name', ''), autocomplete: 'off' });
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') onEnter(); });
@@ -708,6 +713,7 @@
     const input = nameInput(create);
     const recent = store.get('r500:tables', []).map((c) => store.get(tableKey(c))).filter(Boolean).slice(0, 5);
     mount(h('main', { class: 'center' }, h('div', { class: 'panel-card' },
+      homeLink(),
       brand(true),
       h('p', { class: 'lede' }, 'Play Rummy 500 against a friend, each on your own computer. Start a table, send your friend the link, and deal.'),
       h('label', { class: 'field' }, h('span', null, 'Your name'), input),
@@ -746,6 +752,7 @@
     };
     const input = nameInput(join);
     mount(h('main', { class: 'center' }, h('div', { class: 'panel-card' },
+      homeLink(),
       brand(true),
       h('h2', null, 'You’re invited to a game'),
       h('p', { class: 'lede' }, `Table ${code}. Type your name and you’ll join the host at the table.`),
@@ -768,6 +775,7 @@
     ui.screen = 'ended';
     closeModal();
     mount(h('main', { class: 'center' }, h('div', { class: 'panel-card narrow' },
+      homeLink(),
       brand(true),
       h('h2', null, title),
       h('p', { class: 'lede' }, text),
@@ -3304,6 +3312,7 @@
   function boot() {
     if (typeof Peer === 'undefined') {
       mount(h('main', { class: 'center' }, h('div', { class: 'panel-card narrow' },
+        homeLink(),
         brand(true),
         h('h2', null, 'Couldn’t load the game'),
         h('p', { class: 'lede' }, 'The connection library (PeerJS) didn’t load. Check your internet connection and reload the page.'),
