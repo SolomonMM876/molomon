@@ -86,7 +86,7 @@ window.MOLOMON_CONFIG = {
       title: "Rummy 500",
       description: "Our two-player card game.",
       icon: "cards",
-      url: "https://solomonmm876.github.io/rummy-500/"
+      url: "./rummy/"
     },
     {
       id: "backgammon",

@@ -20,6 +20,25 @@ PUBLIC_FILES = (
     "manifest.webmanifest", "install.js", "service-worker.js",
 )
 ASSET_TYPES = {".svg", ".png", ".jpg", ".jpeg", ".webp", ".gif", ".ico", ".woff", ".woff2", ".js", ".txt"}
+# Self-contained apps published whole from their own folders: Watchroom and Rummy 500.
+APP_DIRS = ("room", "rummy")
+APP_TYPES = ASSET_TYPES | {".html", ".css"}
+
+
+def folder_files(name, types):
+    folder = ROOT / name
+    if folder.is_symlink():
+        raise SystemExit(f"The {name} directory must not be a symbolic link.")
+    found = []
+    if folder.exists():
+        for source in sorted(folder.rglob("*")):
+            relative = source.relative_to(ROOT)
+            if source.is_symlink():
+                raise SystemExit(f"Symbolic links are not supported: {relative}")
+            if source.is_file() and not any(part.startswith(".") for part in relative.parts):
+                if source.suffix.lower() in types:
+                    found.append(source)
+    return found
 
 
 def prepare():
@@ -30,17 +49,12 @@ def prepare():
             raise SystemExit(f"Missing or unsupported public file: {name}")
         sources.append(source)
 
-    assets = ROOT / "assets"
-    if assets.is_symlink():
-        raise SystemExit("The assets directory must not be a symbolic link.")
-    if assets.exists():
-        for source in sorted(assets.rglob("*")):
-            relative = source.relative_to(ROOT)
-            if source.is_symlink():
-                raise SystemExit(f"Symbolic links are not supported: {relative}")
-            if source.is_file() and not any(part.startswith(".") for part in relative.parts):
-                if source.suffix.lower() in ASSET_TYPES:
-                    sources.append(source)
+    sources += folder_files("assets", ASSET_TYPES)
+    for name in APP_DIRS:
+        app_files = folder_files(name, APP_TYPES)
+        if not any(source.name == "index.html" for source in app_files):
+            raise SystemExit(f"Missing app page: {name}/index.html")
+        sources += app_files
 
     if OUTPUT.is_symlink():
         raise SystemExit("_site must not be a symbolic link.")

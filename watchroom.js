@@ -3,11 +3,12 @@
  */
 (function (root) {
   "use strict";
-  const WATCHROOM_URL = "https://solomonmm876.github.io/watchroom/";
-  function roomTarget(room, name) {
+  // The room app is served from room/ beside this launcher page.
+  const WATCHROOM_PATH = "./room/";
+  function roomTarget(room, name, base) {
     if (!room || typeof room.roomId !== "string" || room.roomId.length !== 32 || !/^[a-f0-9]{32}$/.test(room.roomId) || typeof room.roomSecret !== "string" || room.roomSecret.length !== 48 || !/^[a-f0-9]{48}$/.test(room.roomSecret)) return null;
     const displayName = typeof name === "string" ? name.replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, 32) : "";
-    const target = new URL(WATCHROOM_URL);
+    const target = new URL(WATCHROOM_PATH, base);
     target.hash = new URLSearchParams({ room: room.roomId, key: room.roomSecret, shared: "1", auto: "1", name: displayName || "You" }).toString();
     return target.href;
   }
@@ -59,7 +60,7 @@
       if (!access.exists() || access.data().ready !== true) {
         state.setup = true; state.error = "Our shared access needs a one-time setup before Watchroom can open.";
       } else {
-        const target = roomTarget(access.data().watchroom, user.displayName);
+        const target = roomTarget(access.data().watchroom, user.displayName, root.location.href);
         if (!target) {
           state.setup = true; state.error = "Our shared Watchroom needs a one-time setup before it can open.";
         } else {

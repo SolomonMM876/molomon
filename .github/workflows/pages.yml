@@ -18,9 +18,14 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v6
+      # Watchroom's room/*.js are ES modules without a package.json; Node 24
+      # detects that syntax for both --check and the room tests.
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
       - name: Check website and activity logic
         run: |
-          for molomon_script in *.js
+          for molomon_script in *.js room/*.js rummy/*.js
           do
             node --check "$molomon_script"
           done
@@ -29,6 +34,8 @@ jobs:
           node test/notes-test.cjs
           node test/pwa-test.cjs
           node test/watchroom-test.cjs
+          node --test test/room/*.mjs
+          node test/rummy-engine-test.js
       - name: Prepare public files
         run: python3 scripts/prepare-pages.py
       - name: Upload public files

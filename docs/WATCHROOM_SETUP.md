@@ -5,7 +5,7 @@ The Watchroom option opens the same reusable room and skips Watchroom’s create
 ## Set the private room once
 
 1. Finish [Shared notes setup](SHARED_NOTES_SETUP.md), including Google Authentication, the private two-account rules, and the `access/molomon` document with boolean `ready: true`. Keep the real account allowlist in the Firebase console only.
-2. Publish the Watchroom version that supports reusable shared rooms (`shared=1`) and automatic entry (`auto=1`). The destination is `https://solomonmm876.github.io/watchroom/`.
+2. Publish Molomon. Watchroom is served from its `room/` folder (`https://solomonmm876.github.io/molomon/room/`) and supports reusable shared rooms (`shared=1`) and automatic entry (`auto=1`).
 3. Generate a fresh room ID and key privately. In a private browser tab’s developer console, this creates the two required random values:
 
    ```js

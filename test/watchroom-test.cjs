@@ -13,6 +13,7 @@ const launcher = source.replace(imports, "await loadSdk()");
 const flush = () => new Promise(resolve => setImmediate(resolve));
 const approved = { uid: "approved-account", displayName: "Our Name" };
 const room = { roomId: "a".repeat(32), roomSecret: "b".repeat(48) };
+const launcherURL = "https://solomonmm876.github.io/molomon/watchroom.html";
 const access = (settings = room) => ({ exists: () => true, data: () => ({ ready: true, watchroom: settings }) });
 
 function fixture({ user = null, read = () => Promise.resolve(access()), failSdkOnce = false } = {}) {
@@ -46,7 +47,7 @@ function fixture({ user = null, read = () => Promise.resolve(access()), failSdkO
     document: { getElementById: id => elements[id] },
     MOLOMON_CONFIG: { notes: { firebase: { apiKey: "public", authDomain: "public", projectId: "public", appId: "public" } } },
     URL, URLSearchParams, Promise,
-    location: { replace: destination => destinations.push(destination) },
+    location: { href: launcherURL, replace: destination => destinations.push(destination) },
     localStorage: storage, sessionStorage: storage,
     console: { log: unexpectedLog, info: unexpectedLog, warn: unexpectedLog, error: unexpectedLog },
     async loadSdk() {
@@ -65,9 +66,9 @@ function fixture({ user = null, read = () => Promise.resolve(access()), failSdkO
 }
 
 (async () => {
-  const target = new URL(roomTarget(room, "Name & key=other"));
+  const target = new URL(roomTarget(room, "Name & key=other", launcherURL));
   assert.equal(target.origin, "https://solomonmm876.github.io");
-  assert.equal(target.pathname, "/watchroom/");
+  assert.equal(target.pathname, "/molomon/room/", "the room opens from Molomon's own room/ folder");
   assert.equal(target.search, "", "room credentials must only be in the fragment");
   const params = new URLSearchParams(target.hash.slice(1));
   assert.equal(params.get("room"), room.roomId);
@@ -76,7 +77,7 @@ function fixture({ user = null, read = () => Promise.resolve(access()), failSdkO
   assert.equal(params.get("auto"), "1");
   assert.equal(params.get("name"), "Name & key=other", "a display name cannot inject invitation fields");
   assert.equal(params.size, 5);
-  assert.equal(new URLSearchParams(new URL(roomTarget(room, "\n")).hash.slice(1)).get("name"), "You");
+  assert.equal(new URLSearchParams(new URL(roomTarget(room, "\n", launcherURL)).hash.slice(1)).get("name"), "You");
 
   let f = fixture(); await flush();
   assert.equal(f.reads, 0, "signed-out visits do not request private room settings");

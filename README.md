@@ -2,7 +2,7 @@
 
 A shared starting page with circular navigation around the white cat and mushrooms. Watch, Play, and Together open their own category pages with circular app choices; Calendar, Notes, and Memories open the included apps. Talk and Favorites are smaller header links. Vanilla HTML, CSS, and JavaScript; no framework or package install required.
 
-Use **Add names** on the homepage to personalize it. Names are saved on that browser/device. Calendar, Backgammon, and Notes open the included activities; Watchroom opens the same private shared room, and Rummy 500 opens its existing website.
+Use **Add names** on the homepage to personalize it. Names are saved on that browser/device. Calendar, Backgammon, Notes, and Rummy 500 open the included activities; Watchroom opens the same private shared room.
 
 Use **Add to phone** for installation. On Android, supported browsers show an install prompt. On iPhone, open Molomon in Safari, tap **Share → Add to Home Screen**. Installed pages use the same website and receive updates when refreshed. Offline use needs an initial online visit; live calendars, cloud notes, and remote games need a connection.
 
@@ -31,13 +31,17 @@ To add a website, copy a link entry and change its values:
 }
 ```
 
-Set `url` to a complete `https://...` destination, or `./page.html` for an included activity, to enable **Open**. Keep `url: null` for unfinished cards: they show **Coming soon** / **Needs a link** and have a disabled button. Options and website links use the same tab. Use Home inside the included apps, or Browser Back after visiting an external site. Available icons: `watch`, `talk`, `chat`, `play`, `cards`, `music`, `spark`, `bookmark`, `note`, `photo`, `calendar`.
+Set `url` to a complete `https://...` destination, or `./page.html` (or `./folder/` for an app in its own folder) for an included activity, to enable **Open**. Keep `url: null` for unfinished cards: they show **Coming soon** / **Needs a link** and have a disabled button. Options and website links use the same tab. Use Home inside the included apps, or Browser Back after visiting an external site. Available icons: `watch`, `talk`, `chat`, `play`, `cards`, `music`, `spark`, `bookmark`, `note`, `photo`, `calendar`.
 
-Watchroom uses an included launcher that reads its room settings only after the same private Google/Firebase authorization used by Notes. Keep individual room invitations and private access links out of this public hub. Rummy 500 is linked as a separate website.
+Watchroom uses an included launcher that reads its room settings only after the same private Google/Firebase authorization used by Notes. Keep individual room invitations and private access links out of this public hub.
 
 ## Included activities
 
-Watchroom opens the same shared room and skips its create/join and name-entry page. Signed-in approved Google accounts open it automatically; otherwise the launcher asks for Google sign-in. Configure the reusable room once using [the private Watchroom setup](docs/WATCHROOM_SETUP.md). Either person can arrive first and keep the room open for the other.
+Watchroom and Rummy 500 used to be separate websites and repositories (`SolomonMM876/watchroom`, `SolomonMM876/rummy-500`). Both now live here as self-contained apps in their own folders, `room/` and `rummy/`, published whole by the Pages workflow.
+
+Watchroom opens the same shared room and skips its create/join and name-entry page. Signed-in approved Google accounts open it automatically; otherwise the launcher asks for Google sign-in. Configure the reusable room once using [the private Watchroom setup](docs/WATCHROOM_SETUP.md). Either person can arrive first and keep the room open for the other. The room app itself (screen and tab-audio sharing, cameras, reactions; desktop Brave or Chrome) is in `room/`; see [Watchroom](docs/WATCHROOM.md).
+
+Rummy 500 is a two-player card game with video chat and visual attacks. The host's tab runs and saves the game. Rules, extras, and release steps are in [Rummy 500](docs/RUMMY_500.md).
 
 Calendar combines two people's busy time and finds free slots within their chosen daily hours. Pick both time zones; proposed times appear in each zone. Import Google Calendar exports (`.ics`) to use it immediately. For live Google sign-in, follow [the one-time setup](docs/GOOGLE_CALENDAR_SETUP.md), then put the public web client ID in `config.js` → `calendar.googleClientId`. No client secret belongs in the website.
 
@@ -85,8 +89,8 @@ git commit -m "Update Molomon links"
 git push origin main
 ```
 
-To inspect the exact deployment folder locally, run `python3 scripts/prepare-pages.py`. `_site/` is generated and should stay out of Git. If you add another root HTML/CSS/JavaScript file, include it in `PUBLIC_FILES` in the prepare script. Bundled library licenses are alongside their files in `assets/vendor/`.
+To inspect the exact deployment folder locally, run `python3 scripts/prepare-pages.py`. `_site/` is generated and should stay out of Git. If you add another root HTML/CSS/JavaScript file, include it in `PUBLIC_FILES` in the prepare script; files inside the app folders listed in `APP_DIRS` (`room/`, `rummy/`) are included automatically. Bundled library licenses are alongside their files in `assets/vendor/` and `room/vendor/`.
 
-The workflow checks configuration syntax, Backgammon rules, calendar time-zone/recurrence logic, notes backup/conflict logic, and offline/update behavior before deploying. Real Google/Firebase connections require setup. Live Backgammon reached signaling in QA, but this network could not open its WebRTC connection; remote play remains unverified here.
+The workflow checks configuration syntax, Backgammon rules, calendar time-zone/recurrence logic, notes backup/conflict logic, offline/update behavior, Watchroom's shared-room, connection and link handling, and the Rummy 500 rules engine before deploying. Real Google/Firebase connections require setup. Live Backgammon reached signaling in QA, but this network could not open its WebRTC connection; remote play remains unverified here.
 
 GitHub references: [Pages publishing source](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site), [custom Pages workflows](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages).
