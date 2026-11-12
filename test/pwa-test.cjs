@@ -35,6 +35,8 @@ async function request(path) { let response; listeners.fetch({ request: new Requ
   assert.equal(await request("category.html?section=unknown"), null);
   assert.equal(await request("notes-data.json"), null);
   assert.equal(await request("https://www.googleapis.com/calendar/v3/calendars/primary/events"), null);
+  assert.equal(await request("https://www.googleapis.com/calendar/v3/freeBusy"), null);
+  assert.equal(await request("https://accounts.google.com/gsi/client"), null);
   assert.equal(await request("room/"), null, "the live Watchroom app is never served from cache");
   assert.equal(await request("rummy/"), null, "the live Rummy 500 app is never served from cache");
   assert.equal(networkRequests, count, "worker does not handle query, API, or non-allowlisted requests");

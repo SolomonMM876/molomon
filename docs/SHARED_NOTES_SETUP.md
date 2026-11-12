@@ -31,6 +31,19 @@ These rules reject everyone outside the two verified Google accounts, including 
 
 The app loads the pinned Firebase Web SDK `12.19.0` from Google's `gstatic` only for configured Google sign-in/shared storage. The unconfigured device preview loads no Firebase SDK. [Firebase web SDK setup](https://firebase.google.com/docs/web/alt-setup).
 
+## Firebase browser key and GitHub alerts
+
+Firebase's browser key is intentionally public. It does not grant access to private notes. Do not remove it to silence a scanner; that breaks sign-in. In [Google Cloud Credentials](https://console.cloud.google.com/apis/credentials?project=molomon-48e02), verify this key is restricted to required Firebase APIs, including Authentication's Identity Toolkit and Token Service APIs. Exclude unrelated APIs, especially Generative Language (Gemini). Keep the two-account Firestore rules in force. [Firebase's API-key guidance](https://firebase.google.com/docs/projects/api-keys).
+
+Check API usage and security logs before resolving an alert. A verified Firebase-only public key can be documented as a false positive. An unrestricted key or one exposed to other services needs remediation first. If rotating, configure and verify a replacement before revoking the old key; mark an alert Revoked only after actual revocation. Moving a browser key into a build variable does not hide it from visitors. [GitHub alert resolutions](https://docs.github.com/en/rest/secret-scanning/secret-scanning).
+
+Molomon's browser key was restricted in Google Cloud on October 15, 2026:
+
+- Allowed APIs: Cloud Datastore, Cloud Firestore, Cloud Logging, Firebase Management, Firebase Rules, Identity Toolkit, and Token Service.
+- Allowed websites: `https://solomonmm876.github.io/*`, `https://molomon-48e02.firebaseapp.com/*`, and HTTP previews on `localhost` / `127.0.0.1` at ports `4317` and `8080`.
+
+These settings live in Google Cloud; editing this file does not apply them. Referrer restrictions reduce unwanted use but do not replace Firebase Authentication or database rules. A new preview address must be reviewed and allowed in Google Cloud before using this key there.
+
 ## Start your shared space
 
 1. Open Notes and choose **Sign in with Google**, using one of your two permitted accounts. Other accounts receive “This Google account has not been given access.” Open **Settings** to set your name under **Writing as**.

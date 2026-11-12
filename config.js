@@ -17,10 +17,12 @@ window.MOLOMON_CONFIG = {
   partners: [],
   secret: { message: "I love you", url: "./secret.html" },
   // Public Google OAuth Web client ID. Never put a client secret here.
-  // See README.md for the one-time Google Calendar setup.
+  // Calendar reads Google from the browser with it; see docs/GOOGLE_CALENDAR_SETUP.md.
   calendar: { googleClientId: "604202426876-21avg4s6hvijim44al479bk5ookpolti.apps.googleusercontent.com" },
-  // Public Firebase web-app configuration for shared notes. Setup is documented
-  // in docs/SHARED_NOTES_SETUP.md. Never add service-account credentials.
+  // Public Firebase browser configuration. The API key identifies this project;
+  // it does not authorize private data access. Restrict it to Firebase APIs in
+  // Google Cloud; never allow Gemini or unrelated billable APIs on this key.
+  // See docs/SHARED_NOTES_SETUP.md. Never add service-account credentials.
   notes: {
     firebase: {
       apiKey: "AIzaSyBxlDiD0tEt1VpmWquj_qTnDC5Dy0P53dU",

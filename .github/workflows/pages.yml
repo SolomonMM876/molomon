@@ -31,6 +31,7 @@ jobs:
           done
           node test/backgammon-test.cjs
           node test/calendar-test.cjs
+          node --test test/calendar-google-test.cjs
           node test/notes-test.cjs
           node test/pwa-test.cjs
           node test/watchroom-test.cjs

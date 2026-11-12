@@ -4,13 +4,13 @@
  * Network first makes a refresh fetch the current published config and files.
  */
 "use strict";
-const CACHE = "molomon-static-v10-notes";
+const CACHE = "molomon-static-v13-google-calendar";
 const STATIC_FILES = [
   "./", "./index.html", "./config.js", "./app.js", "./styles.css",
   "./install.js", "./manifest.webmanifest", "./assets/favicon.svg", "./assets/nook.svg",
   "./assets/app-icon-192.png", "./assets/app-icon-512.png",
   "./backgammon.html", "./backgammon.css", "./backgammon.js", "./assets/vendor/peerjs.min.js",
-  "./calendar.html", "./calendar.css", "./calendar.js", "./assets/vendor/ical.min.js",
+  "./calendar.html", "./calendar.css", "./calendar.js", "./calendar-core.js", "./calendar-google.js",
   "./notes.html", "./notes.css", "./notes.js",
   "./memories.html", "./memories.css",
   "./category.html", "./category.css", "./category.js",

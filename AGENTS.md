@@ -24,6 +24,7 @@
   Prepare reviewable changes; do not push or publish without approval in chat.
 - Run checks relevant to changes. The Pages workflow runs these portable checks:
   `node test/backgammon-test.cjs`, `node test/calendar-test.cjs`,
+  `node --test test/calendar-google-test.cjs`,
   `node test/notes-test.cjs`, `node test/pwa-test.cjs`,
   `node test/watchroom-test.cjs`, `node --test test/room/*.mjs`, and
   `node test/rummy-engine-test.js` (Node 22.7+ for the room tests).

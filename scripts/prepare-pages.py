@@ -10,7 +10,7 @@ OUTPUT = ROOT / "_site"
 PUBLIC_FILES = (
     "index.html", "styles.css", "app.js", "config.js",
     "category.html", "category.css", "category.js",
-    "calendar.html", "calendar.css", "calendar.js",
+    "calendar.html", "calendar.css", "calendar.js", "calendar-core.js", "calendar-google.js",
     "backgammon.html", "backgammon.css", "backgammon.js",
     "notes.html", "notes.css", "notes.js",
     "memories.html", "memories.css",

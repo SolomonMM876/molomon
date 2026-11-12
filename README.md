@@ -43,9 +43,9 @@ Watchroom opens the same shared room and skips its create/join and name-entry pa
 
 Rummy 500 is a two-player card game with video chat and visual attacks. The host's tab runs and saves the game. Rules, extras, and release steps are in [Rummy 500](docs/RUMMY_500.md).
 
-Calendar combines two people's busy time and finds free slots within their chosen daily hours. Pick both time zones; proposed times appear in each zone. Import Google Calendar exports (`.ics`) to use it immediately. For live Google sign-in, follow [the one-time setup](docs/GOOGLE_CALENDAR_SETUP.md), then put the public web client ID in `config.js` → `calendar.googleClientId`. No client secret belongs in the website.
+Calendar shows both of your Google calendars in one week and finds shared free time across your time zones. It reads Google directly in the browser: there is no backend, and events are not stored. Each of you shares your Google calendar with the other once in Google Calendar, then presses **Connect Google Calendar** and ticks your own calendars and your partner's. Names, time zones, available hours, and calendar choices are saved on that device. Private event titles stay hidden. Follow [the one-time setup](docs/GOOGLE_CALENDAR_SETUP.md).
 
-Connected Google calendars refresh every minute while visible, and when you return to the page. Availability snapshots can also be exchanged between devices; send a new snapshot after schedule changes. Shared Google calendars can be read with an account that has permission to view their busy time. Molomon does not store calendar data on a server.
+Each visit needs one press of **Connect Google Calendar**, because Google gives a browser about an hour of access at a time; its window usually closes by itself. While connected, both calendars refresh about once a minute. Stale, failed, or missing calendars do not confirm free time. Google access is read-only; Molomon does not create events.
 
 Backgammon uses a Rummy-style name-entry screen. Enter your display name to start a remote table, or open an invitation and choose **Join table**. Your name is remembered on this device; no account is required. **Play on one screen** opens local pass-and-play. The host keeps the game tab open. Room invitations belong in your private chat, not `config.js`. This is a casual game without a doubling cube. Remote connections use WebRTC and PeerJS; some networks block direct connections.
 
@@ -75,7 +75,7 @@ Open [http://127.0.0.1:8080](http://127.0.0.1:8080). Stop the server with **Ctrl
 2. In the repository, open **Settings → Pages → Build and deployment**, then select **GitHub Actions** as the source.
 3. Open **Actions → Publish Molomon → Run workflow**, choosing **main**. Wait for both jobs to finish successfully; the deployment lists the site URL.
 
-The workflow also runs automatically on every push to **main**. It copies only the public pages, their CSS/JavaScript, install files, and permitted assets into a Pages artifact. README, setup instructions, tests, scripts, Git metadata, and local preview files are excluded. The homepage needs no external services. Optional Google sign-in contacts Google; remote Backgammon contacts PeerJS's signaling service; configured notes contact Firebase.
+The workflow also runs automatically on every push to **main**. It copies only the public pages, their CSS/JavaScript, install files, and permitted assets into a Pages artifact. README, setup instructions, tests, scripts, Git metadata, and local preview files are excluded. The homepage needs no external services. Optional Google sign-in contacts Google; remote Backgammon contacts PeerJS's signaling service; configured notes contact Firebase; a connected Calendar reads Google Calendar directly.
 
 ## Publish updates
 
@@ -91,6 +91,6 @@ git push origin main
 
 To inspect the exact deployment folder locally, run `python3 scripts/prepare-pages.py`. `_site/` is generated and should stay out of Git. If you add another root HTML/CSS/JavaScript file, include it in `PUBLIC_FILES` in the prepare script; files inside the app folders listed in `APP_DIRS` (`room/`, `rummy/`) are included automatically. Bundled library licenses are alongside their files in `assets/vendor/` and `room/vendor/`.
 
-The workflow checks configuration syntax, Backgammon rules, calendar time-zone/recurrence logic, notes backup/conflict logic, offline/update behavior, Watchroom's shared-room, connection and link handling, and the Rummy 500 rules engine before deploying. Real Google/Firebase connections require setup. Live Backgammon reached signaling in QA, but this network could not open its WebRTC connection; remote play remains unverified here.
+The workflow checks configuration syntax, Backgammon rules, calendar time-zone/event logic and Google reading (paging, privacy, failures, saved settings), notes backup/conflict logic, offline/update behavior, Watchroom's shared-room, connection and link handling, and the Rummy 500 rules engine before deploying. Real Google/Firebase connections require setup. Live Backgammon reached signaling in QA, but this network could not open its WebRTC connection; remote play remains unverified here.
 
 GitHub references: [Pages publishing source](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site), [custom Pages workflows](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages).
